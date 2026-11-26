@@ -85,7 +85,7 @@
            subscription and fetched lists survive tab switches. -->
       <div class="panel-drawer-body" role="tabpanel">
         <ControlPanel v-show="tab === 'control'" :udid="udid" />
-        <AutomationPanel v-show="tab === 'automation'" :udid="udid" />
+        <AutomationPanel v-if="!isAndroid" v-show="tab === 'automation'" :udid="udid" />
         <AppsPanel v-show="tab === 'apps'" :udid="udid" />
         <FilesPanel v-show="tab === 'files'" :udid="udid" />
         <LogPanel v-show="tab === 'logs'" :udid="udid" :connected="!!device?.connected" />
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import DeviceStage from "../components/DeviceStage.vue";
 import DeviceInfoCard from "../components/DeviceInfoCard.vue";
 import ReservationCard from "../components/ReservationCard.vue";
@@ -133,16 +133,21 @@ const disconnecting = ref(false);
 
 const showPanels = ref(false); // right control drawer — hidden until "更多" is pressed
 const tab = ref("control");
-const tabs = computed(() => [
-  { key: "control", label: t("control.title") },
-  { key: "automation", label: t("automation.title") },
-  { key: "apps", label: t("apps.title") },
-  { key: "files", label: t("files.title") },
-  { key: "logs", label: t("logs.title") },
-]);
+const tabs = computed(() =>
+  [
+    { key: "control", label: t("control.title") },
+    { key: "automation", label: t("automation.title") },
+    { key: "apps", label: t("apps.title") },
+    { key: "files", label: t("files.title") },
+    { key: "logs", label: t("logs.title") },
+  ].filter((tb) => !(isAndroid.value && tb.key === "automation")),
+);
 
 const device = computed(() => devices.value.find((d) => d.udid === props.udid));
 const isAndroid = computed(() => device.value?.platform === "android");
+watch(isAndroid, (and) => {
+  if (and && tab.value === "automation") tab.value = "control";
+});
 
 async function connectDevice() {
   if (connecting.value) return;

@@ -18,15 +18,27 @@
     />
 
     <footer class="device-card-actions">
+      <button v-if="isAndroid" class="card-action" :title="t('control.back')" @click="ctrl.pressButton('back')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+      </button>
       <button class="card-action" :title="t('control.home')" @click="ctrl.pressButton('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" /></svg>
       </button>
-      <button class="card-action" :title="t('control.lock')" @click="ctrl.pressButton('lock')">
+      <button v-if="isAndroid" class="card-action" :title="t('control.recent')" @click="ctrl.pressButton('recent')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
+      </button>
+      <button v-else class="card-action" :title="t('control.lock')" @click="ctrl.pressButton('lock')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
       </button>
-      <!-- D-pad — summoned as a floating pad above the footer (mirrors Android's popover navpad) -->
+      <!-- D-pad — summoned as a floating pad above the footer -->
       <button class="card-action" :class="{ active: dpadOpen }" :title="t('quick.dpad')" @click="dpadOpen = !dpadOpen">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4" /><path d="m9 6 3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" /></svg>
+      </button>
+      <button v-if="isAndroid" class="card-action" :title="t('control.rotate')" @click="ctrl.pressButton('rotate')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button v-if="isAndroid" class="card-action" :title="t('control.power')" @click="ctrl.pressButton('power')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
       </button>
       <span class="card-action-spacer" />
       <button class="card-action" :title="t('control.volUp')" @click="ctrl.pressButton('volumeup')">

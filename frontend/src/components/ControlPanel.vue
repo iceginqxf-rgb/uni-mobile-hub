@@ -2,7 +2,7 @@
   <div class="card">
     <strong>{{ t("control.title") }}</strong>
 
-    <div class="block">
+    <div v-if="!isAndroid" class="block">
       <label class="muted">{{ t("control.systemAlert") }}</label>
       <div class="row">
         <button @click="checkAlert">{{ t("control.check") }}</button>
@@ -19,10 +19,15 @@
         <input v-model="text" style="flex: 1; min-width: 0" :placeholder="t('control.typePlaceholder')" @keyup.enter="sendText" />
         <button class="primary" @click="sendText">{{ t("control.send") }}</button>
       </div>
-      <div class="row" style="margin-top: 6px">
+      <div class="row" style="flex-wrap: wrap; margin-top: 6px">
         <button @click="ctrl.sendKey('backspace')" :title="t('control.backspace')">⌫</button>
         <button @click="ctrl.sendKey('enter')" :title="t('control.return')">{{ t("control.enter") }}</button>
         <button @click="ctrl.sendKey('space')">{{ t("control.space") }}</button>
+        <template v-if="isAndroid">
+          <button @click="ctrl.sendKey('back')">{{ t("control.back") }}</button>
+          <button @click="ctrl.sendKey('home')">{{ t("control.home") }}</button>
+          <button @click="ctrl.sendKey('recent')">{{ t("control.recent") }}</button>
+        </template>
       </div>
     </div>
 
@@ -53,7 +58,7 @@
         <button class="primary" @click="pushClip">{{ t("control.push") }}</button>
         <button @click="pullClip">{{ t("control.pull") }}</button>
       </div>
-      <span class="muted" style="font-size: 0.72rem">
+      <span v-if="!isAndroid" class="muted" style="font-size: 0.72rem">
         {{ t("control.clipHint") }}
       </span>
     </div>
@@ -73,6 +78,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useControl } from "../composables/useControl";
+import { useDevices } from "../composables/useDevices";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useToast } from "../composables/useToast";
 import { appsApi } from "../api/apps";
@@ -81,6 +87,8 @@ import SelectMenu from "./SelectMenu.vue";
 const props = defineProps({ udid: { type: String, required: true } });
 const { t } = useUiI18n();
 const { push: toast } = useToast();
+const { devices } = useDevices();
+const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
 const ctrl = useControl(props.udid);
 const text = ref("");
 const bundleId = ref("");
