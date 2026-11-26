@@ -3,7 +3,7 @@
     <div class="row head">
       <strong>
         {{ t("logs.title") }}
-        <span class="muted" style="font-size: 0.78rem">· {{ t("logs.device") }}</span>
+        <span class="muted" style="font-size: 0.78rem">· {{ isAndroid ? t("logs.logcat") : t("logs.syslog") }}</span>
       </strong>
       <span class="pill" :class="streaming ? 'on' : 'off'">
         {{ streaming ? t("logs.live") : t("logs.paused") }}
@@ -51,11 +51,12 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { useDevices } from "../composables/useDevices";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useToast } from "../composables/useToast";
 
-// Device (phone) syslog over HTTP SSE — GET /api/devices/<udid>/syslog streams
-// go-ios `ios syslog` line-by-line. Plain EventSource; no Socket.IO involved.
+// Device log over HTTP SSE — GET /api/devices/<udid>/syslog streams either
+// iOS syslog (go-ios) or Android logcat. Plain EventSource; no Socket.IO involved.
 const props = defineProps({
   udid: { type: String, default: "" },
   connected: { type: Boolean, default: false },
@@ -63,7 +64,11 @@ const props = defineProps({
 
 const { t } = useUiI18n();
 const { push: toast } = useToast();
-const LEVELS = ["Default", "Info", "Debug", "Notice", "Error", "Fault"];
+const { devices } = useDevices();
+const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
+const IOS_LEVELS = ["Default", "Info", "Debug", "Notice", "Error", "Fault"];
+const ANDROID_LEVELS = ["V", "D", "I", "W", "E", "F"];
+const LEVELS = computed(() => (isAndroid.value ? ANDROID_LEVELS : IOS_LEVELS));
 const MAX = 2000; // ring buffer
 const PREFS_KEY = "ios-remote-log-prefs";
 // "Jun  1 22:10:27 iPhone " — leading month/day/time + device name.
@@ -95,11 +100,15 @@ const MAX_RECONNECT = 4;
 // ── persisted preferences ─────────────────────────────────────────────
 try {
   const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-  if (LEVELS.includes(p.level)) level.value = p.level;
+  if ([...IOS_LEVELS, ...ANDROID_LEVELS].includes(p.level)) level.value = p.level;
   regexOn.value = !!p.regexOn;
   wrap.value = p.wrap !== false;
   showTs.value = p.showTs !== false;
 } catch { /* ignore */ }
+watch(isAndroid, (and) => {
+  const allowed = and ? ANDROID_LEVELS : IOS_LEVELS;
+  if (level.value && !allowed.includes(level.value)) level.value = "";
+});
 watch([level, regexOn, wrap, showTs], () => {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
@@ -117,7 +126,14 @@ function procOf(line) {
 
 const filtered = computed(() => {
   let arr = allLines.value;
-  if (level.value) arr = arr.filter((l) => l.includes(`<${level.value}>`));
+  if (level.value) {
+    if (isAndroid.value && ANDROID_LEVELS.includes(level.value)) {
+      const tagRe = new RegExp(`\\s${level.value}/`);
+      arr = arr.filter((l) => tagRe.test(l));
+    } else {
+      arr = arr.filter((l) => l.includes(`<${level.value}>`));
+    }
+  }
   if (proc.value.trim()) {
     const q = proc.value.trim().toLowerCase();
     arr = arr.filter((l) => procOf(l).toLowerCase().includes(q));
@@ -145,8 +161,8 @@ function display(l) {
   return showTs.value ? l : l.replace(TS_RE, "");
 }
 function levelClass(l) {
-  if (l.includes("<Error>") || l.includes("<Fault>")) return "lvl-error";
-  if (l.includes("<Debug>")) return "lvl-debug";
+  if (l.includes("<Error>") || l.includes("<Fault>") || /\s[EF]\//.test(l)) return "lvl-error";
+  if (l.includes("<Debug>") || /\s[VD]\//.test(l)) return "lvl-debug";
   return "";
 }
 
@@ -188,7 +204,8 @@ function start() {
   if (!props.udid) { statusMsg.value = ""; return; }
   if (!props.connected) { statusMsg.value = t("logs.deviceConnectFirst"); return; }
   statusMsg.value = t("logs.deviceWaiting");
-  es = new EventSource(`/api/devices/${encodeURIComponent(props.udid)}/syslog`);
+  const q = isAndroid.value && ANDROID_LEVELS.includes(level.value) ? `?level=${encodeURIComponent(level.value)}` : "";
+  es = new EventSource(`/api/devices/${encodeURIComponent(props.udid)}/syslog${q}`);
   live.value = true;
   es.onopen = () => { live.value = true; openedAt = performance.now(); };
   es.onmessage = (ev) => buffer.push(ev.data);

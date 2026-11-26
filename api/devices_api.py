@@ -24,7 +24,8 @@ def syslog(udid: str):
     except reservations.ReservationError as exc:
         return Response(f"event: error\ndata: {exc}\n\n",
                         status=403, mimetype="text/event-stream")
-    resp = Response(stream_with_context(device_log.sse_stream(udid)),
+    level = request.args.get("level", "I")
+    resp = Response(stream_with_context(device_log.sse_stream(udid, level=level)),
                     mimetype="text/event-stream")
     resp.headers["Cache-Control"] = "no-cache"
     resp.headers["X-Accel-Buffering"] = "no"  # disable proxy buffering

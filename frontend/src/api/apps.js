@@ -8,7 +8,7 @@ export const appsApi = {
     http.post(`${base(udid)}/apps/uninstall`, { bundle_id }),
   install: (udid, file) => {
     const fd = new FormData();
-    fd.append("ipa", file);
+    fd.append("file", file);
     return http.postForm(`${base(udid)}/apps/install`, fd);
   },
 };

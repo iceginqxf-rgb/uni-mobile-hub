@@ -5,9 +5,9 @@
       <div class="row">
         <button :disabled="loading" @click="refresh">{{ loading ? "…" : t("apps.refresh") }}</button>
         <button :disabled="installing" @click="$refs.file.click()">
-          {{ installing ? t("apps.installing") : t("apps.installIpa") }}
+          {{ installing ? t("apps.installing") : (isAndroid ? t("apps.installApk") : t("apps.installIpa")) }}
         </button>
-        <input ref="file" type="file" accept=".ipa" style="display: none" @change="onPick" />
+        <input ref="file" type="file" :accept="isAndroid ? '.apk' : '.ipa'" style="display: none" @change="onPick" />
       </div>
     </div>
 
@@ -34,15 +34,18 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { appsApi } from "../api/apps";
 import { useControl } from "../composables/useControl";
+import { useDevices } from "../composables/useDevices";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useConfirm } from "../composables/useConfirm";
 
 const props = defineProps({ udid: { type: String, required: true } });
 const { t } = useUiI18n();
 const { ask } = useConfirm();
+const { devices } = useDevices();
+const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
 const { launch: launchApp } = useControl(props.udid);
 
 const apps = ref([]);

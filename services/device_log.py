@@ -49,14 +49,30 @@ def stop_for_device(udid: str) -> None:
         _terminate(proc)
 
 
-def sse_stream(udid: str):
-    """Generator yielding SSE frames of the device's live syslog."""
+def sse_stream(udid: str, level: str = "I"):
+    """Generator yielding SSE frames of the device's live syslog / logcat."""
     from services import get_adapter
 
+    adapter = get_adapter(udid)
+    if hasattr(adapter, "stream_logs"):
+        _log.info("device remote log SSE started: %s", udid[:12])
+        try:
+            yield "retry: 10000\n: connected\n\n"
+            for line in adapter.stream_logs(udid, level=level):
+                if line:
+                    yield f"data: {_readable(line)}\n\n"
+        except GeneratorExit:
+            pass
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("remote log SSE failed for %s: %s", udid, exc)
+            yield f"event: error\ndata: {exc}\n\n"
+        finally:
+            _log.info("device remote log SSE stopped: %s", udid[:12])
+        return
+
     try:
-        adapter = get_adapter(udid)
         if hasattr(adapter, "log_popen"):
-            proc = adapter.log_popen(udid)
+            proc = adapter.log_popen(udid, level=level)
         else:
             proc = adapter.goios.syslog_popen(udid)
     except Exception as exc:  # noqa: BLE001 — report to the client, don't 500

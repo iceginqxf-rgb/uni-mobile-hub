@@ -632,6 +632,49 @@ class RemoteNodeAdapter:
             f"Live syslog streaming for remote node '{self.node.id}' requires ssh_host or direct node SSE",
         )
 
+    def stream_logs(self, udid: str, level: str = "I"):
+        """Yield decoded log lines from remote node SSE (or SSH adb fallback)."""
+        if self.ssh_adb is not None:
+            proc = self.ssh_adb.logcat_popen(self._resolve_remote_id(udid), level=level)
+            try:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    s = line.rstrip("\r\n")
+                    if s:
+                        yield s
+            finally:
+                with suppress(Exception):
+                    proc.terminate()
+            return
+
+        remote_id = self._resolve_remote_id(udid)
+        q = urllib.parse.quote(remote_id)
+        if self.node.type == "scrcpy":
+            path = f"/api/device/{q}/logcat?level={urllib.parse.quote(level)}"
+        else:
+            path = f"/api/devices/{q}/syslog?level={urllib.parse.quote(level)}"
+        headers = {}
+        if self.node.token:
+            headers["Authorization"] = f"Bearer {self.node.token}"
+            headers["X-Node-Token"] = self.node.token
+
+        for attempt in range(2):
+            with self.client._client.stream("GET", path, headers=headers, timeout=None) as resp:  # noqa: SLF001
+                if resp.status_code == 401 and attempt == 0 and self.node.password:
+                    self.client.login()
+                    continue
+                if resp.status_code >= 400:
+                    raise AppError(
+                        ErrorCode.BAD_REQUEST,
+                        f"Remote log SSE HTTP {resp.status_code} on {path}",
+                    )
+                for raw_line in resp.iter_lines():
+                    if not raw_line or raw_line.startswith(":"):
+                        continue
+                    if raw_line.startswith("data: "):
+                        yield raw_line[6:]
+                return
+
     def shutdown(self) -> None:
         with suppress(Exception):
             self.webrtc.shutdown()

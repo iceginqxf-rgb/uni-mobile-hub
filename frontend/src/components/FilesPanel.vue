@@ -7,7 +7,7 @@
 
     <!-- Path / root selector -->
     <div class="block">
-      <label class="muted">{{ t("files.mediaRoot") }}</label>
+      <label class="muted">{{ isAndroid ? t("files.androidRoot") : t("files.mediaRoot") }}</label>
       <div class="row">
         <input v-model="path" style="flex: 1; min-width: 0" :placeholder="t('files.pathPlaceholder')" @keyup.enter="list" />
         <button @click="list" :disabled="loading">{{ t("files.list") }}</button>
@@ -84,22 +84,32 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { filesApi } from "../api/files";
+import { useDevices } from "../composables/useDevices";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useToast } from "../composables/useToast";
 
 const props = defineProps({ udid: { type: String, required: true } });
 const { t } = useUiI18n();
 const { push: toast } = useToast();
+const { devices } = useDevices();
+const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
 
-const path = ref(".");
+const path = ref(isAndroid.value ? "/sdcard" : ".");
 const nodes = ref([]); // parsed tree (top-level entries)
 const listed = ref(false);
 const loading = ref(false);
 const error = ref("");
-const upPath = ref("Downloads"); // a sensible writable default in the media root
+const upPath = ref(isAndroid.value ? "/sdcard/Download" : "Downloads"); // sensible writable default
 const uploading = ref(false);
+
+watch(isAndroid, (and) => {
+  if (and && (path.value === "." || path.value === "")) path.value = "/sdcard";
+  if (and && upPath.value === "Downloads") upPath.value = "/sdcard/Download";
+  if (!and && path.value === "/sdcard") path.value = ".";
+  if (!and && upPath.value === "/sdcard/Download") upPath.value = "Downloads";
+});
 
 // Extensions browsers can render inline (so we only show the preview eye for
 // these). HEIC/HEIF are excluded — no native browser support.
