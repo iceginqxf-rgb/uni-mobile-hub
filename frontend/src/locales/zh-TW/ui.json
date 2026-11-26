@@ -4,11 +4,11 @@
     "cancel": "取消"
   },
   "app": {
-    "title": "WebAppFlaskauto-iOS--讓世界離你更近！",
-    "subtitle": "即時鏡像 · 遠端操控 · 高效協作",
+    "title": "uni-mobile-hub · 雙端雲真機控制台",
+    "subtitle": "Android Scrcpy · iOS WDA · 跨機協同",
     "logout": "登出",
     "admin": "管理",
-    "name": "WebAppFlaskauto-iOS"
+    "name": "uni-mobile-hub"
   },
   "roles": {
     "user": "普通用户",
@@ -30,8 +30,12 @@
     "live": "即時",
     "offline": "離線",
     "connected": "已連線",
-    "none": "未發現 iOS 裝置。請以 USB 連接、信任電腦後點重新整理。",
-    "backendOffline": "無法連線後端服務，請確認後端已啟動後重新整理。"
+    "none": "未發現裝置。請檢查 USB 連線或遠端 Worker 節點後點重新整理。",
+    "backendOffline": "無法連線後端服務，請確認後端已啟動後重新整理。",
+    "filterAll": "全部",
+    "filterAndroid": "Android",
+    "filterIos": "iOS",
+    "nodeLocal": "本機"
   },
   "login": {
     "continue": "登入以繼續",
@@ -91,6 +95,8 @@
     "disconnecting": "中斷中…",
     "wdaRunning": "執行中",
     "wdaDown": "未執行",
+    "androidReady": "已就緒",
+    "androidDown": "未連線",
     "connectingBanner": "連線中…首次啟動約需 10–20 秒。",
     "connectFailed": "連線失敗",
     "disconnectFailed": "中斷失敗",
@@ -116,6 +122,12 @@
     "title": "控制",
     "buttons": "按鍵",
     "home": "主畫面",
+    "back": "返回",
+    "recent": "多工切換",
+    "power": "電源",
+    "wake": "喚醒",
+    "sleep": "休眠",
+    "rotate": "旋轉",
     "lock": "鎖定",
     "volUp": "音量 +",
     "volDown": "音量 −",
@@ -168,6 +180,7 @@
     "title": "應用程式",
     "refresh": "重新整理",
     "installIpa": "安裝 .ipa",
+    "installApk": "安裝 .apk",
     "installing": "安裝中…",
     "launch": "啟動",
     "uninstall": "解除安裝",
@@ -178,6 +191,7 @@
   "files": {
     "title": "檔案",
     "mediaRoot": "媒體根目錄",
+    "androidRoot": "裝置儲存根目錄",
     "pathPlaceholder": "路徑",
     "list": "列出",
     "downloadLabel": "下載（裝置路徑）",
@@ -206,6 +220,8 @@
     "live": "即時",
     "system": "系統",
     "device": "裝置",
+    "syslog": "Syslog",
+    "logcat": "Logcat",
     "deviceConnectFirst": "請先連線裝置後檢視其日誌。",
     "deviceWaiting": "等待裝置日誌…",
     "deviceError": "裝置日誌連線已結束。",
@@ -280,7 +296,7 @@
     "loading": "載入中…",
     "battery": "電池",
     "storage": "儲存",
-    "version": "iOS 版本",
+    "version": "系統版本",
     "resolution": "解析度",
     "cpu": "CPU",
     "modelNumber": "型號",
@@ -308,6 +324,7 @@
     "right": "右",
     "center": "中心/點按",
     "accessibility": "輔助使用",
+    "androidNav": "裝置快捷控制",
     "assistiveTouch": "輔助觸控",
     "zoom": "縮放",
     "voiceOver": "旁白",

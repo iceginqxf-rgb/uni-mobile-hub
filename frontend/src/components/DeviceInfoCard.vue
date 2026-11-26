@@ -4,11 +4,14 @@
       <div>
         <div class="qc-model">{{ info?.marketing || info?.name || udid.slice(0, 12) }}</div>
         <div class="qc-sub">
-          {{ info?.product_type }}<template v-if="info?.ios_version"> · iOS {{ info.ios_version }}</template>
+          {{ info?.product_type }}
+          <template v-if="info?.os_version || info?.ios_version">
+            · {{ info?.platform === 'android' ? 'Android' : 'iOS' }} {{ info?.os_version || info?.ios_version }}
+          </template>
         </div>
       </div>
       <div class="row" style="gap: 6px">
-        <span class="qc-chip conn-usb">USB</span>
+        <span class="qc-chip conn-usb">{{ info?.node_id && info.node_id !== 'local' ? info.node_id : (info?.connection || 'USB').toUpperCase() }}</span>
         <button class="qc-icon-btn" :title="t('info.refresh')" :disabled="loading" @click="load">↻</button>
       </div>
     </div>
@@ -98,9 +101,10 @@ const rows = computed(() => {
   const i = info.value || {};
   const r = [];
   const add = (k, v, mono = false) => { if (v) r.push({ k, v, mono }); };
-  add(t("info.version"), i.ios_version && `${i.ios_version}${i.build ? " (" + i.build + ")" : ""}`);
+  const osVer = i.os_version || i.ios_version;
+  add(t("info.version"), osVer && `${osVer}${i.build ? " (" + i.build + ")" : ""}`);
+  add("SDK / ABI", i.cpu_arch, true);
   if (i.resolution) add(t("info.resolution"), `${i.resolution.w} × ${i.resolution.h}`);
-  add(t("info.cpu"), i.cpu_arch, true);
   add(t("info.modelNumber"), i.model_number, true);
   add(t("info.hardwareModel"), i.hardware_model, true);
   add(t("info.activation"), activationLabel(i.activation_state));

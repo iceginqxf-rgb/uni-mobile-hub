@@ -4,11 +4,11 @@
     "cancel": "Cancel"
   },
   "app": {
-    "title": "WebAppFlaskauto-iOS — Bringing the World Closer to You!",
-    "subtitle": "Real-time mirror · remote control · efficient collaboration",
+    "title": "uni-mobile-hub — Unified Android & iOS Console",
+    "subtitle": "Android Scrcpy · iOS WDA · Multi-Node Hub",
     "logout": "Logout",
     "admin": "Admin",
-    "name": "WebAppFlaskauto-iOS"
+    "name": "uni-mobile-hub"
   },
   "roles": {
     "user": "User",
@@ -30,8 +30,12 @@
     "live": "Live",
     "offline": "Offline",
     "connected": "Connected",
-    "none": "No iOS devices found. Connect over USB, trust the computer, then Refresh.",
-    "backendOffline": "Can't reach the backend service. Make sure it's running, then refresh."
+    "none": "No devices found. Check USB connections or remote Worker nodes, then Refresh.",
+    "backendOffline": "Can't reach the backend service. Make sure it's running, then refresh.",
+    "filterAll": "All",
+    "filterAndroid": "Android",
+    "filterIos": "iOS",
+    "nodeLocal": "Local"
   },
   "login": {
     "continue": "Sign in to continue",
@@ -91,6 +95,8 @@
     "disconnecting": "Disconnecting…",
     "wdaRunning": "running",
     "wdaDown": "Down",
+    "androidReady": "ready",
+    "androidDown": "idle",
     "connectingBanner": "Connecting… first launch can take ~10–20s.",
     "connectFailed": "Connection failed",
     "disconnectFailed": "Failed to disconnect",
@@ -116,6 +122,12 @@
     "title": "Control",
     "buttons": "Buttons",
     "home": "Home",
+    "back": "Back",
+    "recent": "Recents",
+    "power": "Power",
+    "wake": "Wake",
+    "sleep": "Sleep",
+    "rotate": "Rotate",
     "lock": "Lock",
     "volUp": "Vol +",
     "volDown": "Vol −",
@@ -168,6 +180,7 @@
     "title": "Apps",
     "refresh": "Refresh",
     "installIpa": "Install .ipa",
+    "installApk": "Install .apk",
     "installing": "Installing…",
     "launch": "Launch",
     "uninstall": "Uninstall",
@@ -178,6 +191,7 @@
   "files": {
     "title": "Files",
     "mediaRoot": "Media root",
+    "androidRoot": "Storage root",
     "pathPlaceholder": "Path",
     "list": "List",
     "downloadLabel": "Download (device path)",
@@ -206,6 +220,8 @@
     "live": "Live",
     "system": "System",
     "device": "Device",
+    "syslog": "Syslog",
+    "logcat": "Logcat",
     "deviceConnectFirst": "Connect the device to view its log.",
     "deviceWaiting": "Waiting for device log…",
     "deviceError": "Device log stream ended.",
@@ -280,7 +296,7 @@
     "loading": "Loading…",
     "battery": "Battery",
     "storage": "Storage",
-    "version": "iOS Version",
+    "version": "OS Version",
     "resolution": "Resolution",
     "cpu": "CPU",
     "modelNumber": "Model No.",
@@ -308,6 +324,7 @@
     "right": "Right",
     "center": "Center / Tap",
     "accessibility": "Accessibility",
+    "androidNav": "Quick Device Keys",
     "assistiveTouch": "AssistiveTouch",
     "zoom": "Zoom",
     "voiceOver": "VoiceOver",

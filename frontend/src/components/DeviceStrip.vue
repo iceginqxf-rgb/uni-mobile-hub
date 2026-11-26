@@ -14,7 +14,11 @@
       @click="d.udid !== current && $emit('select', d.udid)"
     >
       <span class="dot" :class="dotClass(d)" />
+      <span class="plat-tag" :class="d.platform === 'android' ? 'and' : 'ios'">
+        {{ d.platform === 'android' ? 'Android' : 'iOS' }}
+      </span>
       <span class="dlabel">{{ d.marketing || d.name || short(d.udid) }}</span>
+      <span v-if="d.node_id && d.node_id !== 'local'" class="node-tag">{{ d.node_id }}</span>
     </button>
   </div>
 </template>
@@ -59,5 +63,9 @@ function dotClass(d) {
 .dstrip-item .dot.on { background: #34d399; }
 .dstrip-item .dot.off { background: #f87171; }
 .dstrip-item .dot.idle { background: #fbbf24; }
+.plat-tag { font-size: 0.68rem; font-weight: 650; padding: 1px 5px; border-radius: 6px; }
+.plat-tag.and { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+.plat-tag.ios { background: rgba(59, 130, 246, 0.16); color: #60a5fa; }
+.node-tag { font-size: 0.68rem; color: #fbbf24; opacity: 0.9; }
 .dlabel { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
 </style>

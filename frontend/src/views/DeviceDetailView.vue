@@ -3,10 +3,11 @@
     <div class="page-head">
       <div class="row" style="flex-wrap: wrap">
         <button @click="$emit('back')">{{ t("detail.back") }}</button>
-        <h1 style="font-size: 1.05rem">{{ device?.name || udid }}</h1>
-        <span v-if="device" class="pill" :class="device.wda_running ? 'on' : 'off'">
-          WDA {{ device.wda_running ? t("detail.wdaRunning") : t("detail.wdaDown") }}
+        <h1 style="font-size: 1.05rem">{{ device?.marketing || device?.name || udid }}</h1>
+        <span v-if="device" class="pill" :class="(isAndroid ? device.connected : device.wda_running) ? 'on' : 'off'">
+          {{ isAndroid ? `Scrcpy ${device.connected ? t("detail.androidReady") : t("detail.androidDown")}` : `WDA ${device.wda_running ? t("detail.wdaRunning") : t("detail.wdaDown")}` }}
         </span>
+        <span v-if="device?.node_id && device.node_id !== 'local'" class="pill warn">{{ device.node_id }}</span>
         <!-- Connection controls live with the WDA status, not in the left column. -->
         <span style="flex: 1 1 auto" />
         <!-- Normal user who hasn't claimed this device: steer them to 占用
@@ -141,6 +142,7 @@ const tabs = computed(() => [
 ]);
 
 const device = computed(() => devices.value.find((d) => d.udid === props.udid));
+const isAndroid = computed(() => device.value?.platform === "android");
 
 async function connectDevice() {
   if (connecting.value) return;
