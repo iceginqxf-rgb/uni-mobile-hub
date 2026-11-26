@@ -54,10 +54,9 @@ class AdbScreenshotProvider(BaseScreenProvider):
         self._running = False
         self._healthy = False
 
-    @property
-    def is_healthy(self) -> bool:
+    def health(self) -> bool:
         return self._running and self._healthy
 
     @property
     def stats(self) -> dict:
-        return {"provider": self.name, "frames": self._frames, "healthy": self.is_healthy}
+        return {"provider": self.name, "frames": self._frames, "healthy": self.health()}

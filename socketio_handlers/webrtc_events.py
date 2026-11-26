@@ -31,9 +31,13 @@ def _provider_factory(udid: str):
     Runs in the bridge's worker thread; blocking calls are fine there."""
 
     def factory(recover: bool):
-        adapter = get_adapter()
+        adapter = get_adapter(udid)
+        if hasattr(adapter, "make_webrtc_track") and not recover:
+            track = adapter.make_webrtc_track(udid)
+            if track is not None:
+                return track
         if not adapter.check_wda(udid):
-            adapter.connect(udid)  # re-establish WDA (may raise AppError)
+            adapter.connect(udid)  # re-establish WDA / session (may raise AppError)
         if recover:
             return adapter.fallback_provider(udid)  # screenshot (JPEG)
         try:

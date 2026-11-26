@@ -29,8 +29,10 @@ class AndroidAdapter:
             adb_bin=str(config.get("ANDROID_ADB_BIN") or ""),
             command_timeout=int(config.get("ANDROID_COMMAND_TIMEOUT", 15)),
         )
+        self.use_scrcpy = str(config.get("ANDROID_USE_SCRCPY", "1")) == "1"
         self.webrtc = WebRTCBridge(config)
         self._controllers: Dict[str, AndroidController] = {}
+        self._scrcpy_sessions: Dict[str, object] = {}
         self._lock = threading.RLock()
 
     def is_backend_available(self) -> bool:
@@ -85,16 +87,56 @@ class AndroidAdapter:
         except AppError:
             pass
         dev.connected = True
+        if self.use_scrcpy:
+            self._ensure_scrcpy_session(udid, dev, ctrl)
         state.touch(udid)
         return dev  # type: ignore[return-value]
+
+    def _ensure_scrcpy_session(self, udid: str, dev: Optional[AndroidDevice], ctrl: AndroidController):
+        with self._lock:
+            existing = self._scrcpy_sessions.get(udid)
+            if existing is not None and getattr(existing, "alive", False):
+                ctrl.attach_scrcpy(existing)
+                return existing
+        from android.scrcpy.session import DEFAULT_SCRCPY_JAR, ScrcpySession
+
+        jar_path = str(self.config.get("SCRCPY_SERVER_PATH") or "") or DEFAULT_SCRCPY_JAR
+        session = ScrcpySession(
+            self.adb,
+            udid,
+            server_jar=jar_path,
+            server_version=str(self.config.get("SCRCPY_SERVER_VERSION", "5.0.1")),
+            max_width=int(self.config.get("SCRCPY_MAX_WIDTH", 1080)),
+            bitrate=int(self.config.get("SCRCPY_BITRATE", 8_000_000)),
+            max_fps=int(self.config.get("SCRCPY_MAX_FPS", 30)),
+        )
+        if not session.is_available():
+            return None
+        try:
+            if session.start():
+                with self._lock:
+                    self._scrcpy_sessions[udid] = session
+                ctrl.attach_scrcpy(session)
+                if dev and session.resolution:
+                    dev.screen_width, dev.screen_height = session.resolution
+                return session
+        except Exception as exc:  # noqa: BLE001 — fallback cleanly to ADB
+            _log.info("scrcpy start skipped/failed for %s (%s); using ADB fallback", udid, exc)
+            with suppress(Exception):
+                session.stop()
+        return None
 
     def disconnect(self, udid: str) -> None:
         with suppress(Exception):
             self.webrtc.stop_device(udid)
         self.stop_stream(udid)
         with self._lock:
+            session = self._scrcpy_sessions.pop(udid, None)
             ctrl = self._controllers.pop(udid, None)
             state.controllers.pop(udid, None)
+        if session is not None:
+            with suppress(Exception):
+                session.stop()
         if ctrl is not None:
             with suppress(Exception):
                 ctrl.close()
@@ -128,8 +170,31 @@ class AndroidAdapter:
     def make_screen_provider(
         self, udid: str, provider_name: Optional[str] = None, fps: Optional[int] = None
     ):
+        want = (provider_name or self.config.get("ANDROID_SCREEN_PROVIDER", "scrcpy")).lower()
+        if want == "scrcpy" and self.use_scrcpy:
+            dev = state.get_device(udid)
+            ctrl = self.controller(udid)
+            session = self._ensure_scrcpy_session(udid, dev, ctrl)  # type: ignore[arg-type]
+            if session is not None and getattr(session, "alive", False):
+                from android.scrcpy.video_track import ScrcpyFrameProvider
+
+                return ScrcpyFrameProvider(session)
         shot_fps = int(fps or self.config.get("ANDROID_SCREENSHOT_FPS", 6))
         return AdbScreenshotProvider(self.adb, udid, fps=shot_fps)
+
+    def make_webrtc_track(self, udid: str):
+        dev = state.get_device(udid)
+        if not dev or not dev.connected:
+            self.connect(udid)
+            dev = state.get_device(udid)
+        if self.use_scrcpy:
+            ctrl = self.controller(udid)
+            session = self._ensure_scrcpy_session(udid, dev, ctrl)  # type: ignore[arg-type]
+            if session is not None and getattr(session, "alive", False):
+                from android.scrcpy.video_track import ScrcpyVideoTrack
+
+                return ScrcpyVideoTrack(session)
+        return None
 
     def fallback_provider(self, udid: str, fps: Optional[int] = None):
         shot_fps = int(fps or self.config.get("ANDROID_SCREENSHOT_FPS", 5))

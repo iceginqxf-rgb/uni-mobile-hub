@@ -398,14 +398,21 @@ class WebRTCBridge:
 
     @staticmethod
     def _build_track(provider_factory):
-        """Open the first provider (MJPEG → screenshot fallback) and wrap it in a
-        JpegVideoTrack. Runs in a worker thread; raising here becomes
-        webrtc:error before any PC exists."""
+        """Open the first provider (or an already-constructed MediaStreamTrack).
+        Runs in a worker thread; raising here becomes webrtc:error before any PC exists."""
         try:
             provider = provider_factory(False)
+            if isinstance(provider, MediaStreamTrack):
+                if hasattr(provider, "start"):
+                    provider.start()
+                return provider
             provider.start()
         except AppError:
             provider = provider_factory(True)  # robust fallback (screenshot, JPEG)
+            if isinstance(provider, MediaStreamTrack):
+                if hasattr(provider, "start"):
+                    provider.start()
+                return provider
             provider.start()
         return JpegVideoTrack(provider_factory, initial=provider)
 
@@ -422,6 +429,8 @@ class WebRTCBridge:
         # creating the PC. If a newer offer for this pair landed meanwhile, drop
         # this one now — never create a PC a newer offer will just tear down.
         track = await asyncio.to_thread(self._build_track, provider_factory)  # raises → webrtc:error, no PC
+        if hasattr(track, "bind_loop"):
+            track.bind_loop(asyncio.get_running_loop())
         if superseded():
             with suppress(Exception):
                 track.stop()
