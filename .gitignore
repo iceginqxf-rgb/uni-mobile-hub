@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+.vite/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs / runtime
+*.log
+logs/
+data/
+ios_logs/
+ios_downloads/
+uploads/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude workspace
+.claude/
+
+# iOS pairing identity — go-ios writes this on first pair; per-machine, never commit.
+*.plist
+
+# Large local-only iOS tooling resources (DDIs + go-ios CLI). Kept on the dev
+# machine but not in the repo — see README for setup notes.
+resources/devimages/
+resources/executable/
+resources/runpath/
+
+# Local SQLite databases & iOS signing credentials
+*.db
+*.sqlite*
+*.mobileprovision
+*.p12
+*.cer
