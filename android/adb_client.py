@@ -26,6 +26,18 @@ def _quote_arg(value: str) -> str:
     return shlex.quote(value)
 
 
+def _is_windows_bin(bin_path: str) -> bool:
+    return "\\" in bin_path or bin_path.lower().endswith(".exe") or (len(bin_path) > 1 and bin_path[1] == ":")
+
+
+def _quote_win_cmd(value: str) -> str:
+    if not value:
+        return '""'
+    if any(ch in value for ch in ' \t"&|<>()^;%'):
+        return '"' + value.replace('"', '\\"') + '"'
+    return value
+
+
 class AdbClient:
     """Thin, thread-safe wrapper around the ``adb`` CLI binary."""
 
@@ -57,7 +69,8 @@ class AdbClient:
             adb_args += ["-s", serial]
         adb_args += args
         if self.ssh_host:
-            remote_cmd = " ".join(_quote_arg(a) for a in adb_args)
+            quoter = _quote_win_cmd if _is_windows_bin(adb_bin) else _quote_arg
+            remote_cmd = " ".join(quoter(a) for a in adb_args)
             return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", self.ssh_host, remote_cmd]
         return adb_args
 

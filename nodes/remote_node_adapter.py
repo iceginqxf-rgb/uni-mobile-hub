@@ -157,12 +157,22 @@ class RemoteSnapshotProvider(BaseScreenProvider):
 
 def _fetch_remote_screenshot(client: RemoteNodeClient, remote_udid: str, quality: int = 80) -> bytes:
     if client.node.type == "scrcpy":
-        resp = client.request(
-            "GET",
-            f"/api/snapshot?device_id={urllib.parse.quote(remote_udid)}&quality={int(quality)}",
-            expect_json=False,
-        )
-        return bytes(resp.content)
+        last_exc: Optional[AppError] = None
+        for attempt in range(5):
+            try:
+                resp = client.request(
+                    "GET",
+                    f"/api/snapshot?device_id={urllib.parse.quote(remote_udid)}&quality={int(quality)}",
+                    expect_json=False,
+                )
+                return bytes(resp.content)
+            except AppError as exc:
+                last_exc = exc
+                if "HTTP 500" not in str(exc) or attempt == 4:
+                    raise
+                time.sleep(0.35)
+        if last_exc is not None:
+            raise last_exc
 
     body = client.request(
         "GET",
