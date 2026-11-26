@@ -1,6 +1,7 @@
 <template>
   <div
     class="screen-wrap"
+    :data-platform="platform"
     @pointerdown.prevent="onDown"
     @pointerup.prevent="onUp"
     @pointercancel="onCancel"
@@ -43,6 +44,7 @@ const { t } = useUiI18n();
 
 const props = defineProps({
   udid: { type: String, required: true },
+  platform: { type: String, default: "ios" },
   frame: { type: String, default: "" },
   stream: { type: Object, default: null }, // MediaStream (WebRTC) or null
   hevc: { type: Boolean, default: false }, // WebCodecs canvas (native HEVC)

@@ -9,10 +9,11 @@
 
     <DeviceScreen
       :udid="udid"
+      :platform="device?.platform || 'ios'"
       :frame="mode === 'jpeg' ? stream.frame.value : ''"
-      :stream="mode === 'webrtc' ? rtc.stream.value : null"
+      :stream="activeMediaStream"
       :hevc="mode === 'hevc'"
-      :rtc-control="mode === 'webrtc' ? rtc.sendControl : null"
+      :rtc-control="activeRtcControl"
       :on-media="onMedia"
     />
 
@@ -40,11 +41,11 @@
       </button>
     </footer>
 
-    <p v-if="hevc.error.value || rtc.error.value || stream.error.value" class="banner err" style="margin: 0; border-radius: 0">
-      {{ hevc.error.value || rtc.error.value || stream.error.value }}
+    <p v-if="activeError" class="banner err" style="margin: 0; border-radius: 0">
+      {{ activeError }}
     </p>
 
-    <!-- MJPEG fallback (Socket.IO) provider/fps knobs — only when WebRTC is off -->
+    <!-- MJPEG / Scrcpy Socket.IO provider/fps knobs — only when WebRTC is off -->
     <StreamPanel
       v-if="mode === 'jpeg'"
       :running="stream.running.value"
@@ -61,10 +62,11 @@
   <DeviceScreen
     v-else
     :udid="udid"
+    :platform="device?.platform || 'ios'"
     :frame="mode === 'jpeg' ? stream.frame.value : ''"
-    :stream="mode === 'webrtc' ? rtc.stream.value : null"
+    :stream="activeMediaStream"
     :hevc="false"
-    :rtc-control="mode === 'webrtc' ? rtc.sendControl : null"
+    :rtc-control="activeRtcControl"
   />
 
   <!-- Floating D-pad — summoned from the footer navpad button. Teleported to
@@ -100,6 +102,7 @@ import DeviceScreen from "./DeviceScreen.vue";
 import StreamPanel from "./StreamPanel.vue";
 import { useStream } from "../composables/useStream";
 import { useWebRTC } from "../composables/useWebRTC";
+import { useScrcpyStream } from "../composables/useScrcpyStream";
 import { useHevcStream, browserSupportsHevc, iosSupportsHevc } from "../composables/useHevcStream";
 import { useDevices } from "../composables/useDevices";
 import { useControl } from "../composables/useControl";
@@ -119,18 +122,31 @@ const { devices, webrtcEnabled, hevcAvailable } = useDevices();
 
 const stream = useStream(props.udid);
 const rtc = useWebRTC(props.udid);
+const scrcpyRtc = useScrcpyStream(props.udid);
 const hevc = useHevcStream(props.udid);
 const ctrl = useControl(props.udid);
 // "" until health + connect decide. Grid never uses HEVC.
 const mode = ref("");
 
+const activeMediaStream = computed(() => {
+  if (mode.value === "webrtc") return rtc.stream.value;
+  if (mode.value === "scrcpy-rtc") return scrcpyRtc.stream.value;
+  return null;
+});
+const activeRtcControl = computed(() => {
+  if (mode.value === "webrtc") return rtc.sendControl;
+  if (mode.value === "scrcpy-rtc") return scrcpyRtc.sendControl;
+  return null;
+});
+const activeError = computed(() => hevc.error.value || rtc.error.value || scrcpyRtc.error.value || stream.error.value);
+
 function onMedia(el) {
   hevc.bind(el);
 }
 
-function useJpeg() {
+function useJpeg(prov = "mjpeg") {
   mode.value = "jpeg";
-  if (!stream.running.value) stream.start("mjpeg");
+  if (!stream.running.value) stream.start(prov);
 }
 
 function useWebRtc() {
@@ -155,6 +171,8 @@ function leaveHevc(serverProvider) {
 hevc.setFallback(leaveHevc);
 
 const device = computed(() => devices.value.find((d) => d.udid === props.udid));
+const isAndroid = computed(() => device.value?.platform === "android");
+const streamEndpoint = computed(() => device.value?.stream_endpoint || null);
 // Prefer the marketing name ("iPhone 15 Pro Max") over the lockdown DeviceName
 // (typically just "iPhone" if the user never renamed the device). Backend stamps
 // `marketing` onto every device in /api/devices via IOSDevice.to_dict().
@@ -247,6 +265,7 @@ watch(dpadOpen, async (open) => {
 const live = computed(() => {
   if (mode.value === "hevc") return hevc.running.value;
   if (mode.value === "webrtc") return rtc.running.value;
+  if (mode.value === "scrcpy-rtc") return scrcpyRtc.running.value;
   return stream.running.value;
 });
 const chipText = computed(() => {
@@ -254,14 +273,37 @@ const chipText = computed(() => {
     return hevc.running.value ? t("stream.live") + " · HEVC" : t("stream.connecting");
   }
   if (mode.value === "webrtc") {
-    return rtc.running.value ? t("stream.live") + " · WebRTC" : t("stream.connecting");
+    const label = isAndroid.value ? "Scrcpy" : "WebRTC";
+    return rtc.running.value ? `${t("stream.live")} · ${label}` : t("stream.connecting");
+  }
+  if (mode.value === "scrcpy-rtc") {
+    return scrcpyRtc.running.value ? t("stream.live") + " · Scrcpy Node" : t("stream.connecting");
   }
   return stream.running.value ? t("stream.live") : t("stream.connecting");
 });
 
 async function pickTransport() {
   if (!props.connected || mode.value) return;
-  // Single-device stage only. The grid stays on MJPEG/WebRTC.
+  if (isAndroid.value) {
+    const ep = streamEndpoint.value;
+    if (ep?.mode === "remote_scrcpy" && ep?.direct && ep?.base_url) {
+      mode.value = "scrcpy-rtc";
+      scrcpyRtc.start(
+        ep,
+        () => {
+          if (!props.connected) return;
+          if (webrtcEnabled.value) useWebRtc();
+          else useJpeg("scrcpy");
+        },
+        { w: device.value?.screen_width || 1080, h: device.value?.screen_height || 2400 },
+      );
+      return;
+    }
+    if (webrtcEnabled.value) useWebRtc();
+    else useJpeg("scrcpy");
+    return;
+  }
+  // Single-device iOS stage: HEVC -> WebRTC -> MJPEG.
   const version = device.value?.ios_version || "";
   if (!props.compact && hevcAvailable.value === true && iosSupportsHevc(version)) {
     const ok = await browserSupportsHevc();
@@ -274,13 +316,14 @@ async function pickTransport() {
   }
   if (!props.compact && hevcAvailable.value === null) return;
   if (webrtcEnabled.value) useWebRtc();
-  else useJpeg();
+  else useJpeg("mjpeg");
 }
 
 watch(
   () => props.connected,
   (isConnected) => {
     if (!isConnected) {
+      scrcpyRtc.stop();
       mode.value = "";
       return;
     }
@@ -295,6 +338,8 @@ watch([hevcAvailable, webrtcEnabled], () => {
 onUnmounted(() => {
   hevc.stop();
   hevc.dispose();
+  scrcpyRtc.stop();
+  scrcpyRtc.dispose();
   stream.stop();
   stream.dispose();
   rtc.stop();
