@@ -13,17 +13,17 @@
 - **双原生投屏引擎**：Android 保留原生 Scrcpy H.264/WebRTC 极速链路，iOS 保留 WDA MJPEG / WebRTC / HEVC 链路，不为了统一而牺牲帧率。
 - **AI Agent 友好**：面向纯视觉 Agent 提供统一设备列表、截图与归一化坐标（`0.0~1.0`）触控接口。
 
-详细技术方案与模块划分见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)（上游原版 iOS 说明归档于 [docs/README_ios_upstream.md](docs/README_ios_upstream.md)）。
+详细技术方案与模块划分见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，AI Agent API 手册见 [docs/AGENT_API.md](docs/AGENT_API.md)（上游原版 iOS 说明归档于 [docs/README_ios_upstream.md](docs/README_ios_upstream.md)）。
 
 ---
 
 ## 合并二开路线图
 
 - [x] **Base**：以 `WebAppFlaskauto-iOS` 为底座建库，修复系统 HTTP 代理环境下回环 WDA / MJPEG 端口被误代理导致 `502` 的问题（`trust_env=False`）
-- [ ] **Phase 1**：抽象后端 `AdapterRegistry`（`IOSAdapter` + `AndroidAdapter` + 跨机 `RemoteNodeAdapter`）
-- [ ] **Phase 2**：前端 `DeviceScreen.vue` 双引擎播放器自动切换（Scrcpy WebRTC / iOS Stream）
-- [ ] **Phase 3**：面板差异化适配（`.apk`/`.ipa`、导航键、`logcat`/`syslog`）
-- [ ] **Phase 4**：跨平台群控同步（Sync）与统一 AI Agent HTTP API
+- [x] **Phase 1**：抽象后端 `AdapterRegistry`（`IOSAdapter` + `AndroidAdapter` + 跨机 `RemoteNodeAdapter`）
+- [x] **Phase 2**：前端 `DeviceScreen.vue` 双引擎播放器自动切换（Scrcpy WebRTC / iOS Stream）
+- [x] **Phase 3**：面板差异化适配（`.apk`/`.ipa`、导航键、`logcat`/`syslog`）
+- [x] **Phase 4**：跨平台群控同步（Sync）与统一 AI Agent HTTP API（`Bearer Token` + `/api/v1/agent/*`）
 
 ---
 

@@ -108,10 +108,39 @@ def validate_token(token: str) -> Optional[dict]:
 
 
 # ── current user ─────────────────────────────────────────────────────
+def _agent_token_user() -> Optional[dict]:
+    import hmac
+    import os
+    from flask import current_app, has_request_context, request
+
+    if not has_request_context():
+        return None
+    expected = (current_app.config.get("AGENT_API_TOKEN") or os.environ.get("AGENT_API_TOKEN") or "").strip()
+    if not expected:
+        return None
+    auth = request.headers.get("Authorization", "")
+    presented = ""
+    if auth.lower().startswith("bearer "):
+        presented = auth[7:].strip()
+    elif request.headers.get("X-Agent-Token"):
+        presented = request.headers.get("X-Agent-Token", "").strip()
+    if not presented or not hmac.compare_digest(presented, expected):
+        return None
+    return {
+        "id": 0,
+        "username": "agent-api",
+        "email": "",
+        "role": "admin",
+        "is_active": 1,
+    }
+
+
 def current_user() -> Optional[dict]:
     if "current_user" in g.__dict__:
         return g.current_user
     user = validate_token(session.get("session_token", ""))
+    if user is None:
+        user = _agent_token_user()
     g.current_user = user
     return user
 
