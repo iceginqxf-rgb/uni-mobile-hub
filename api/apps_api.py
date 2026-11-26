@@ -35,11 +35,12 @@ def uninstall(udid: str):
 @bp.post("/<udid>/apps/install")
 @api
 def install(udid: str):
-    """Install an uploaded .ipa (multipart field ``ipa``)."""
-    f = request.files.get("ipa")
+    """Install an uploaded .ipa or .apk (multipart field ``ipa``, ``apk``, or ``file``)."""
+    f = request.files.get("ipa") or request.files.get("apk") or request.files.get("file")
     if f is None or not f.filename:
-        raise AppError(ErrorCode.BAD_REQUEST, "no .ipa uploaded (multipart field 'ipa')")
-    fd, path = tempfile.mkstemp(suffix=".ipa")
+        raise AppError(ErrorCode.BAD_REQUEST, "no package uploaded (multipart field 'ipa'/'apk'/'file')")
+    ext = os.path.splitext(f.filename)[1].lower() or ".ipa"
+    fd, path = tempfile.mkstemp(suffix=ext)
     os.close(fd)
     try:
         f.save(path)

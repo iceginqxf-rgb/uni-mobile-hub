@@ -54,7 +54,11 @@ def sse_stream(udid: str):
     from services import get_adapter
 
     try:
-        proc = get_adapter().goios.syslog_popen(udid)
+        adapter = get_adapter(udid)
+        if hasattr(adapter, "log_popen"):
+            proc = adapter.log_popen(udid)
+        else:
+            proc = adapter.goios.syslog_popen(udid)
     except Exception as exc:  # noqa: BLE001 — report to the client, don't 500
         _log.exception("syslog spawn failed for %s", udid)
         yield f"event: error\ndata: {exc}\n\n"

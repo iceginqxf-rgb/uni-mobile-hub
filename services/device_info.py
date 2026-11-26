@@ -108,6 +108,14 @@ def collect(udid: str) -> dict:
     """Return a structured info dict for the device. Raises if not present."""
     from services.runtime_state import state  # lazy: avoid import cycle
 
+    dev = state.get_device(udid)
+    if dev is not None and getattr(dev, "platform", "ios") != "ios":
+        from services import get_adapter
+
+        adapter = get_adapter(udid)
+        if hasattr(adapter, "collect_device_info"):
+            return adapter.collect_device_info(udid)
+
     vals, batt, disk = _gather(udid)
     dev = state.get_device(udid)
     if not vals and not dev:

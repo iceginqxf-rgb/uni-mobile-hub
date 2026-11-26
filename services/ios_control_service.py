@@ -105,22 +105,28 @@ class IOSControlService:
         controller.input_text(str(body["text"]))
         return {"length": len(str(body["text"]))}
 
-    # Keyboard keys → the control chars WDA's /wda/keys understands.
+    # Keyboard keys → the control chars WDA's /wda/keys understands (and Android
+    # AdbClient translates back to keyevents; Android nav keys map directly).
     _KEYS = {"backspace": "\b", "delete": "\b", "enter": "\n", "return": "\n",
              "tab": "\t", "space": " "}
+    _NAV_KEYS = {"back", "home", "recent", "appswitch"}
 
     @classmethod
     def key(cls, udid: str, name: str) -> dict:
         name = (name or "").strip().lower()
+        if name in cls._NAV_KEYS:
+            get_adapter().controller(udid).press_button(name)
+            return {"key": name}
         ch = cls._KEYS.get(name)
         if ch is None:
             raise AppError(ErrorCode.BAD_REQUEST,
-                           f"unknown key '{name}' (backspace/enter/tab/space)")
+                           f"unknown key '{name}' (backspace/enter/tab/space/back/home/recent)")
         get_adapter().controller(udid).input_text(ch)
         return {"key": name}
 
-    # Hardware buttons. Keys are the public (UI) names; values map to WDA.
+    # Hardware buttons. Keys are the public (UI) names; values map to WDA or AndroidController.
     _PRESS = {"volumeup": "volumeUp", "volumedown": "volumeDown", "snapshot": "snapshot"}
+    _DIRECT_BUTTONS = {"back", "recent", "appswitch", "power", "wake", "sleep", "rotate", "menu"}
 
     @classmethod
     def button(cls, udid: str, name: str) -> dict:
@@ -134,10 +140,12 @@ class IOSControlService:
             controller.unlock()
         elif name in cls._PRESS:
             controller.press_button(cls._PRESS[name])
+        elif name in cls._DIRECT_BUTTONS:
+            controller.press_button(name)
         else:
             raise AppError(
                 ErrorCode.BAD_REQUEST,
-                f"unknown button '{name}' (home/lock/unlock/volumeup/volumedown)",
+                f"unknown button '{name}' (home/back/recent/lock/unlock/power/wake/rotate/volumeup/volumedown)",
             )
         return {"button": name}
 

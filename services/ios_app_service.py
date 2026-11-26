@@ -15,20 +15,28 @@ _log = get_logger(__name__)
 
 class IOSAppService:
     @staticmethod
-    def _goios():
-        adapter = get_adapter()
+    def _adapter_or_goios(udid: str):
+        adapter = get_adapter(udid)
+        if hasattr(adapter, "list_apps") and getattr(adapter, "platform", "ios") != "ios":
+            return adapter, None
         if not (getattr(adapter, "use_goios", False) and adapter.goios.is_available()):
             raise AppError(ErrorCode.BAD_REQUEST,
                            "app management requires go-ios, which is not available")
-        return adapter.goios
+        return adapter, adapter.goios
 
     @classmethod
     def list_apps(cls, udid: str, system: bool = False) -> dict:
-        return {"apps": cls._goios().list_apps(udid, system=system)}
+        adapter, goios = cls._adapter_or_goios(udid)
+        if goios is None:
+            return adapter.list_apps(udid, system=system)
+        return {"apps": goios.list_apps(udid, system=system)}
 
     @classmethod
     def uninstall(cls, udid: str, bundle_id: str) -> dict:
-        ok, msg = cls._goios().uninstall_app(udid, bundle_id)
+        adapter, goios = cls._adapter_or_goios(udid)
+        if goios is None:
+            return adapter.uninstall_app(udid, bundle_id)
+        ok, msg = goios.uninstall_app(udid, bundle_id)
         if not ok:
             raise AppError(ErrorCode.BAD_REQUEST, f"uninstall failed: {msg[:200]}",
                            {"bundle_id": bundle_id})
@@ -37,7 +45,10 @@ class IOSAppService:
 
     @classmethod
     def install(cls, udid: str, ipa_path: str) -> dict:
-        ok, msg = cls._goios().install_app(udid, ipa_path)
+        adapter, goios = cls._adapter_or_goios(udid)
+        if goios is None:
+            return adapter.install_app(udid, ipa_path)
+        ok, msg = goios.install_app(udid, ipa_path)
         if not ok:
             raise AppError(ErrorCode.BAD_REQUEST, f"install failed: {msg[:300]}")
         _log.info("installed ipa on %s", udid[:12])

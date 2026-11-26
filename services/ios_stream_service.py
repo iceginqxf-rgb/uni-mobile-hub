@@ -38,6 +38,8 @@ class IOSStreamService:
 
     def choose_provider(self, udid: str, provider: Optional[str]) -> str:
         dev = state.get_device(udid)
+        if dev and getattr(dev, "platform", "ios") != "ios":
+            return (provider or str(self.config.get("ANDROID_SCREEN_PROVIDER", "scrcpy"))).lower()
         version = dev.ios_version if dev else ""
         return resolve_screen_provider(
             provider,
@@ -107,8 +109,8 @@ class IOSStreamService:
                 # back to the existing MJPEG provider in this same start.
                 _log.warning("HEVC transport failed (%s); falling back to MJPEG", exc.code)
                 return self.start_stream(udid, provider="mjpeg", fps=fps, _recovery=_recovery)
-            if provider_name == "mjpeg" and exc.code not in non_recoverable:
-                _log.warning("MJPEG provider failed (%s); falling back to screenshot", exc.code)
+            if provider_name not in ("screenshot",) and exc.code not in non_recoverable:
+                _log.warning("Stream provider %s failed (%s); falling back to screenshot", provider_name, exc.code)
                 sp = adapter.fallback_provider(udid, fps=fps)
                 session = StreamSession(
                     udid, sp, max_fps=session_fps, on_unhealthy=self._on_unhealthy,
@@ -156,7 +158,7 @@ class IOSStreamService:
                 kind = params.get("provider") or ""
         time.sleep(1.0)  # let the failed provider/socket fully tear down
         dev = state.get_device(udid)
-        if not dev or not dev.connected or not dev.local_wda_port:
+        if not dev or not dev.connected or (getattr(dev, "platform", "ios") == "ios" and not dev.local_wda_port):
             _log.info("stream %s: device gone, skipping recovery", udid)
             return
         if udid in self._no_recover:

@@ -21,6 +21,10 @@ def init_platform(config: dict):
         from ios.ios_adapter import IOSAdapter  # lazy
 
         registry.register(IOSAdapter(config), "ios")
+    if str(config.get("ANDROID_ENABLED", "0")) == "1":
+        from android.android_adapter import AndroidAdapter  # lazy
+
+        registry.register(AndroidAdapter(config), "android")
 
     _registry = registry
     return _registry

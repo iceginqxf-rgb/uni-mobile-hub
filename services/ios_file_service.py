@@ -46,6 +46,9 @@ class IOSFileService:
 
     @classmethod
     def tree(cls, udid: str, path: str = ".", app: Optional[str] = None) -> dict:
+        adapter = get_adapter(udid)
+        if getattr(adapter, "platform", "ios") != "ios" and hasattr(adapter, "file_tree"):
+            return adapter.file_tree(udid, path=path, app=app)
         if app:
             return {"path": path, "app": app, "tree": cls._goios().fsync_tree(udid, path, app)}
         try:
@@ -81,6 +84,9 @@ class IOSFileService:
         path. go-ios treats ``--dstPath`` as a directory and writes
         ``<dir>/<basename(src)>`` inside it. Caller streams the file then removes
         the parent dir."""
+        adapter = get_adapter(udid)
+        if getattr(adapter, "platform", "ios") != "ios" and hasattr(adapter, "file_pull_to_temp"):
+            return adapter.file_pull_to_temp(udid, src_path, app=app)
         import shutil
 
         tmp_dir = tempfile.mkdtemp(prefix="iosfile_")
@@ -94,6 +100,9 @@ class IOSFileService:
 
     @classmethod
     def push(cls, udid: str, local_path: str, dst_path: str, app: Optional[str] = None) -> dict:
+        adapter = get_adapter(udid)
+        if getattr(adapter, "platform", "ios") != "ios" and hasattr(adapter, "file_push"):
+            return adapter.file_push(udid, local_path, dst_path, app=app)
         ok, msg = cls._goios().fsync_push(udid, local_path, dst_path, app)
         if not ok:
             raise AppError(ErrorCode.BAD_REQUEST, f"push failed: {msg[:200]}", {"dst": dst_path})
