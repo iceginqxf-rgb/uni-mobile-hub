@@ -25,6 +25,12 @@ def init_platform(config: dict):
         from android.android_adapter import AndroidAdapter  # lazy
 
         registry.register(AndroidAdapter(config), "android")
+    if config.get("REMOTE_NODES"):
+        from nodes.node_config import parse_remote_nodes
+        from nodes.remote_node_adapter import RemoteNodeAdapter
+
+        for node_cfg in parse_remote_nodes(config.get("REMOTE_NODES")):
+            registry.register(RemoteNodeAdapter(config, node_cfg), f"node:{node_cfg.id}")
 
     _registry = registry
     return _registry

@@ -57,6 +57,8 @@ def load_config() -> dict:
         "SCRCPY_MAX_WIDTH": int(g("SCRCPY_MAX_WIDTH", "1080")),
         "SCRCPY_BITRATE": int(g("SCRCPY_BITRATE", "8000000")),
         "SCRCPY_MAX_FPS": int(g("SCRCPY_MAX_FPS", "30")),
+        "REMOTE_NODES": g("REMOTE_NODES", ""),
+        "NODE_API_TOKEN": g("NODE_API_TOKEN", ""),
         "IOS_COMMAND_TIMEOUT": int(g("IOS_COMMAND_TIMEOUT", "15")),
         "IOS_WDA_REMOTE_PORT": int(g("IOS_WDA_REMOTE_PORT", "8100")),
         "IOS_LOCAL_PORT_START": int(g("IOS_LOCAL_PORT_START", "18100")),
