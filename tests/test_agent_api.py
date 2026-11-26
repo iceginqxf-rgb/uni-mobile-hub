@@ -16,6 +16,8 @@ from services.runtime_state import state
 
 
 class _FakeAdapter:
+    platform = "multi"
+
     def __init__(self, controllers: dict):
         self._controllers = controllers
         self.connect_calls = []
@@ -109,6 +111,7 @@ class TestAgentApi(unittest.TestCase):
         with (
             patch("services.auth_service.current_user", return_value=token_user),
             patch("api.agent_api.get_adapter", return_value=self.fake),
+            patch("services.ios_app_service.get_adapter", return_value=self.fake),
             patch("services.ios_control_service.get_adapter", return_value=self.fake),
         ):
             with app.test_client() as client:

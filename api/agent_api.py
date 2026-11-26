@@ -13,6 +13,7 @@ from flask import Blueprint, Response, request
 from api import api
 from services import auth_service, get_adapter
 from services import reservation_service as reservations
+from services.ios_app_service import IOSAppService
 from services.ios_control_service import ios_control_service
 from services.reservation_service import ReservationError
 from services.runtime_state import state
@@ -162,7 +163,7 @@ def agent_key(udid: str):
 def agent_apps(udid: str):
     _ensure_ready(udid)
     system = (request.args.get("system") or "").strip().lower() in ("1", "true", "yes")
-    return get_adapter(udid).list_apps(udid, system=system)
+    return IOSAppService.list_apps(udid, system=system)
 
 
 @bp.post("/devices/<udid>/open_app")
