@@ -59,9 +59,11 @@ def register_blueprints(app) -> None:
     from api.automation_api import bp as automation_bp
     from api.auth_api import bp as auth_bp
     from api.reservations_api import bp as reservations_bp
+    from api.sync_api import bp as sync_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(reservations_bp)
+    app.register_blueprint(sync_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(devices_bp)
     app.register_blueprint(control_bp)

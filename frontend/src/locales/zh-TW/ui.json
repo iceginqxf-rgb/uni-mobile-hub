@@ -282,6 +282,7 @@
   },
   "nav": {
     "devices": "裝置",
+    "sync": "群控",
     "settings": "設定"
   },
   "settings": {
@@ -335,6 +336,20 @@
     "grid": "網格",
     "single": "單屏",
     "expand": "展開"
+  },
+  "sync": {
+    "title": "跨系統群控同步",
+    "subtitle": "將主控裝置的點擊、滑動、輸入與按鍵依螢幕比例即時同步到多台 Android / iOS 從機。",
+    "master": "主控裝置 (Master)",
+    "slaves": "受控從機 (Slaves)",
+    "selectAll": "全選",
+    "save": "儲存群控組",
+    "clearAll": "全部清除",
+    "needTwoDevices": "請至少接入 2 台裝置（Android 或 iOS）後再設定群控。",
+    "activeGroups": "已生效的群控組",
+    "remove": "移除",
+    "saved": "群控組已儲存",
+    "cleared": "群控組已清除"
   },
   "errors": {
     "network": "網路請求失敗，請檢查連線後重試。",

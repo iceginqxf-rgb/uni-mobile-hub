@@ -282,6 +282,7 @@
   },
   "nav": {
     "devices": "设备",
+    "sync": "群控",
     "settings": "设置"
   },
   "settings": {
@@ -335,6 +336,20 @@
     "grid": "网格",
     "single": "单屏",
     "expand": "展开"
+  },
+  "sync": {
+    "title": "跨系统群控同步",
+    "subtitle": "将主控设备的点击、滑动、输入与按键按屏幕比例实时同步到多台 Android / iOS 从机。",
+    "master": "主控设备 (Master)",
+    "slaves": "受控从机 (Slaves)",
+    "selectAll": "全选",
+    "save": "保存群控组",
+    "clearAll": "全部清除",
+    "needTwoDevices": "请至少接入 2 台设备（Android 或 iOS）后再配置群控。",
+    "activeGroups": "已生效的群控组",
+    "remove": "移除",
+    "saved": "群控组已保存",
+    "cleared": "群控组已清除"
   },
   "errors": {
     "network": "网络请求失败，请检查连接后重试。",

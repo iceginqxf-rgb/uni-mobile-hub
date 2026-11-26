@@ -282,6 +282,7 @@
   },
   "nav": {
     "devices": "Devices",
+    "sync": "Sync",
     "settings": "Settings"
   },
   "settings": {
@@ -335,6 +336,20 @@
     "grid": "Grid",
     "single": "Single",
     "expand": "Expand"
+  },
+  "sync": {
+    "title": "Cross-OS Sync Control",
+    "subtitle": "Mirror touch, swipes, text, and keys proportionally from one master device to Android & iOS slaves.",
+    "master": "Master device",
+    "slaves": "Slave devices",
+    "selectAll": "Select all",
+    "save": "Save group",
+    "clearAll": "Clear all",
+    "needTwoDevices": "Connect at least 2 devices (Android or iOS) to configure a sync group.",
+    "activeGroups": "Active sync groups",
+    "remove": "Remove",
+    "saved": "Sync group saved",
+    "cleared": "Sync group cleared"
   },
   "errors": {
     "network": "Network request failed. Please check the connection and try again.",

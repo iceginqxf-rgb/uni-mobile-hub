@@ -7,6 +7,7 @@ from typing import Tuple
 from services import get_adapter
 from services.runtime_state import state
 from services.request_validators import as_number, map_display_to_device, require
+from services.sync_service import sync_service
 from utils.app_errors import AppError, ErrorCode
 from utils.image_utils import to_data_url
 from utils.logging_setup import get_logger
@@ -31,7 +32,17 @@ class IOSControlService:
         return w, h
 
     def _resolve_point(self, udid: str, controller, body: dict, xk: str, yk: str) -> Tuple[int, int]:
-        """If display_width/height present → map; else treat x/y as device px."""
+        """Resolve normalized (nx/ny), display_width/height, or raw pixel coords."""
+        nkx = "n" + xk
+        nky = "n" + yk
+        if body.get(nkx) is not None and body.get(nky) is not None:
+            nx = max(0.0, min(1.0, as_number(body[nkx], nkx)))
+            ny = max(0.0, min(1.0, as_number(body[nky], nky)))
+            dev_w, dev_h = self._device_size(udid, controller)
+            tx = max(0, min(dev_w - 1, int(round(nx * dev_w))))
+            ty = max(0, min(dev_h - 1, int(round(ny * dev_h))))
+            return tx, ty
+
         x = as_number(body[xk], xk)
         y = as_number(body[yk], yk)
         dw, dh = body.get("display_width"), body.get("display_height")
@@ -45,35 +56,62 @@ class IOSControlService:
             )
         return int(round(x)), int(round(y))
 
+    def _normalized_xy(self, udid: str, controller, x: int, y: int) -> Tuple[float, float]:
+        """Best-effort pixel → 0..1 normalization for cross-OS sync fanout."""
+        try:
+            w, h = self._device_size(udid, controller)
+            return max(0.0, min(1.0, x / float(w))), max(0.0, min(1.0, y / float(h)))
+        except Exception:
+            return 0.5, 0.5
+
     def tap(self, udid: str, body: dict) -> dict:
-        require(body, "x", "y")
+        if body.get("nx") is None or body.get("ny") is None:
+            require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         controller.tap(x, y)
+        if sync_service.get_slaves(udid):
+            nx, ny = self._normalized_xy(udid, controller, x, y)
+            sync_service.fanout(udid, "tap", {"nx": nx, "ny": ny})
         return {"x": x, "y": y}
 
     def swipe(self, udid: str, body: dict) -> dict:
-        require(body, "x1", "y1", "x2", "y2")
+        if any(body.get(k) is None for k in ("nx1", "ny1", "nx2", "ny2")):
+            require(body, "x1", "y1", "x2", "y2")
         controller = get_adapter().controller(udid)
         x1, y1 = self._resolve_point(udid, controller, body, "x1", "y1")
         x2, y2 = self._resolve_point(udid, controller, body, "x2", "y2")
         duration = float(body.get("duration", 0.3) or 0.3)
         controller.swipe(x1, y1, x2, y2, duration)
+        if sync_service.get_slaves(udid):
+            nx1, ny1 = self._normalized_xy(udid, controller, x1, y1)
+            nx2, ny2 = self._normalized_xy(udid, controller, x2, y2)
+            sync_service.fanout(udid, "swipe", {
+                "nx1": nx1, "ny1": ny1, "nx2": nx2, "ny2": ny2, "duration": duration,
+            })
         return {"x1": x1, "y1": y1, "x2": x2, "y2": y2, "duration": duration}
 
     def double_tap(self, udid: str, body: dict) -> dict:
-        require(body, "x", "y")
+        if body.get("nx") is None or body.get("ny") is None:
+            require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         controller.double_tap(x, y)
+        if sync_service.get_slaves(udid):
+            nx, ny = self._normalized_xy(udid, controller, x, y)
+            sync_service.fanout(udid, "double_tap", {"nx": nx, "ny": ny})
         return {"x": x, "y": y}
 
     def long_press(self, udid: str, body: dict) -> dict:
-        require(body, "x", "y")
+        if body.get("nx") is None or body.get("ny") is None:
+            require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         duration = float(body.get("duration", 0.8) or 0.8)
         controller.long_press(x, y, duration)
+        if sync_service.get_slaves(udid):
+            nx, ny = self._normalized_xy(udid, controller, x, y)
+            sync_service.fanout(udid, "long_press", {"nx": nx, "ny": ny, "duration": duration})
         return {"x": x, "y": y, "duration": duration}
 
     @staticmethod
@@ -101,9 +139,12 @@ class IOSControlService:
     @staticmethod
     def input_text(udid: str, body: dict) -> dict:
         require(body, "text")
+        text = str(body["text"])
         controller = get_adapter().controller(udid)
-        controller.input_text(str(body["text"]))
-        return {"length": len(str(body["text"]))}
+        controller.input_text(text)
+        if sync_service.get_slaves(udid):
+            sync_service.fanout(udid, "input_text", {"text": text})
+        return {"length": len(text)}
 
     # Keyboard keys → the control chars WDA's /wda/keys understands (and Android
     # AdbClient translates back to keyevents; Android nav keys map directly).
@@ -116,12 +157,16 @@ class IOSControlService:
         name = (name or "").strip().lower()
         if name in cls._NAV_KEYS:
             get_adapter().controller(udid).press_button(name)
+            if sync_service.get_slaves(udid):
+                sync_service.fanout(udid, "key", {"name": name})
             return {"key": name}
         ch = cls._KEYS.get(name)
         if ch is None:
             raise AppError(ErrorCode.BAD_REQUEST,
                            f"unknown key '{name}' (backspace/enter/tab/space/back/home/recent)")
         get_adapter().controller(udid).input_text(ch)
+        if sync_service.get_slaves(udid):
+            sync_service.fanout(udid, "key", {"name": name})
         return {"key": name}
 
     # Hardware buttons. Keys are the public (UI) names; values map to WDA or AndroidController.
@@ -147,6 +192,8 @@ class IOSControlService:
                 ErrorCode.BAD_REQUEST,
                 f"unknown button '{name}' (home/back/recent/lock/unlock/power/wake/rotate/volumeup/volumedown)",
             )
+        if sync_service.get_slaves(udid):
+            sync_service.fanout(udid, "button", {"name": name})
         return {"button": name}
 
     @staticmethod
@@ -185,3 +232,6 @@ class IOSControlService:
     def terminate_app(udid: str, bundle_id: str) -> dict:
         get_adapter().controller(udid).terminate_app(bundle_id)
         return {"bundle_id": bundle_id}
+
+
+ios_control_service = IOSControlService()

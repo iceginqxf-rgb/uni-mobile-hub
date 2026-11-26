@@ -8,7 +8,7 @@
     <div class="shell-main">
       <header class="topbar">
         <h1 style="font-size: 1.05rem; margin: 0; font-weight: 650">
-          {{ activeNav === "settings" ? t("nav.settings") : activeNav === "admin" ? t("app.admin") : t("nav.devices") }}
+          {{ activeNav === "settings" ? t("nav.settings") : activeNav === "admin" ? t("app.admin") : activeNav === "sync" ? t("nav.sync") : t("nav.devices") }}
         </h1>
         <div class="row topbar-actions">
           <!-- Two-mode view switch, aligned with Android: 单屏(single) / 网格(grid). -->
@@ -55,6 +55,9 @@
       <main class="shell-content">
         <!-- Admin section (own view; admins only) -->
         <AdminPanel v-if="activeNav === 'admin' && auth.isAdmin.value" @close="activeNav = 'devices'" />
+
+        <!-- Cross-OS synchronous group control -->
+        <SyncPanel v-else-if="activeNav === 'sync'" />
 
         <!-- Settings section -->
         <div v-else-if="activeNav === 'settings'" class="device-grid" style="grid-template-columns: minmax(0, 480px)">
@@ -105,6 +108,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import DeviceDetailView from "./views/DeviceDetailView.vue";
 import LoginView from "./components/LoginView.vue";
 import AdminPanel from "./components/AdminPanel.vue";
+import SyncPanel from "./components/SyncPanel.vue";
 import DeviceMatrix from "./components/DeviceMatrix.vue";
 import NavRail from "./components/NavRail.vue";
 import ThemeToggle from "./components/ThemeToggle.vue";
