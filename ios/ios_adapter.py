@@ -34,9 +34,11 @@ _log = get_logger(__name__)
 
 class IOSAdapter:
     platform = "ios"
+    source_id = "ios"
 
     def __init__(self, config: dict):
         self.config = config
+        self.source_id = "ios"
         self.device_manager = IOSDeviceManager(
             command_timeout=int(config.get("IOS_COMMAND_TIMEOUT", 15))
         )
@@ -85,12 +87,14 @@ class IOSAdapter:
         scanned = self.device_manager.scan_devices()
         present = set()
         for dev in scanned:
+            dev.source = self.source_id
+            dev.node_id = "local"
             present.add(dev.udid)
             state.upsert_device(dev)
         # Devices that vanished from the scan were unplugged: drop them and tear
         # down our side (forwards + WDA), otherwise we'd keep relaunching WDA for
         # a device that's "not found" and leave a ghost card in the grid.
-        for udid in state.remove_missing(present):
+        for udid in state.remove_missing(present, source=self.source_id):
             _log.info("device unplugged, tearing down: %s", udid)
             with suppress(Exception):
                 self.disconnect(udid)

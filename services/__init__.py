@@ -1,25 +1,34 @@
-"""Service layer + the platform-adapter accessor.
+"""Service layer + the multi-platform adapter registry accessor.
 
 ``init_platform(config)`` is called once at app startup; services then call
-``get_adapter()``. Today that's always the IOSAdapter; the unified platform
-will pick android/ios by device. Import of the adapter is lazy to dodge an
-import cycle (adapter → runtime_state → services package).
+``get_adapter()`` for aggregate operations or ``get_adapter(udid)`` to obtain
+the specific platform/node adapter owning ``udid``.
 """
 
 from __future__ import annotations
 
-_adapter = None
+from typing import Optional
+
+_registry = None
 
 
 def init_platform(config: dict):
-    global _adapter
-    from ios.ios_adapter import IOSAdapter  # lazy
+    global _registry
+    from services.adapter_registry import AdapterRegistry
 
-    _adapter = IOSAdapter(config)
-    return _adapter
+    registry = AdapterRegistry(config)
+    if str(config.get("IOS_ENABLED", "1")) == "1":
+        from ios.ios_adapter import IOSAdapter  # lazy
+
+        registry.register(IOSAdapter(config), "ios")
+
+    _registry = registry
+    return _registry
 
 
-def get_adapter():
-    if _adapter is None:
+def get_adapter(udid: Optional[str] = None):
+    if _registry is None:
         raise RuntimeError("Platform adapter not initialized — call init_platform first")
-    return _adapter
+    if udid is None:
+        return _registry
+    return _registry.adapter_for(udid)

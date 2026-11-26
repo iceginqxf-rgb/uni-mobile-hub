@@ -1,62 +1,31 @@
-"""Device model. Field names are chosen so a future Android model can share
-the same shape (``platform`` discriminator + common fields)."""
+"""iOS device model extending :class:`services.device_models.MobileDevice`."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import List
+
+from services.device_models import MobileDevice
+
+IOS_CAPABILITIES = [
+    "home",
+    "lock",
+    "unlock",
+    "volume",
+    "assistivetouch",
+    "voiceover",
+    "zoom",
+    "ipa",
+    "afc",
+    "syslog",
+]
 
 
 @dataclass
-class IOSDevice:
+class IOSDevice(MobileDevice):
     platform: str = "ios"
-    udid: str = ""
-    name: str = ""
-    product_type: str = ""          # e.g. iPhone14,5
-    ios_version: str = ""
-    connected: bool = False
-    developer_mode: str = "unknown"  # "on" | "off" | "unknown"
-    trusted: bool = False
-    wda_running: bool = False
-    local_wda_port: Optional[int] = None
-    screen_width: Optional[int] = None
-    screen_height: Optional[int] = None
-    orientation: str = "PORTRAIT"
-    streaming: bool = False
-    screen_provider: Optional[str] = None
-    last_seen: str = field(default_factory=lambda: datetime.now().isoformat())
-
-    def to_dict(self) -> dict:
-        # Stamp `marketing` derived from product_type so every list-view
-        # consumer (DeviceStage / DeviceMatrix / DeviceStrip) gets the friendly
-        # name (e.g. "iPhone 15 Pro Max") without each one re-fetching the
-        # /info detail endpoint. Late import keeps the dataclass import-light.
-        from ios.device_marketing import marketing_name
-        d = asdict(self)
-        d["marketing"] = marketing_name(self.product_type) if self.product_type else ""
-        return d
-
-    def merge(self, other: "IOSDevice") -> None:
-        """Update mutable fields from a freshly-scanned device, preserving
-        runtime-only fields (ports, wda_running, streaming) unless the new
-        scan has better info."""
-        self.name = other.name or self.name
-        self.product_type = other.product_type or self.product_type
-        self.ios_version = other.ios_version or self.ios_version
-        # NOTE: do NOT copy `other.connected` / wda_running / local_wda_port /
-        # streaming — those are app-level RUNTIME state owned by connect()/
-        # disconnect(). A periodic rescan (which always reports connected=False)
-        # must not clobber a device we've actually connected. Device removal on
-        # unplug is handled separately by state.remove_missing().
-        if other.developer_mode != "unknown":
-            self.developer_mode = other.developer_mode
-        self.trusted = other.trusted or self.trusted
-        if other.screen_width:
-            self.screen_width = other.screen_width
-        if other.screen_height:
-            self.screen_height = other.screen_height
-        self.last_seen = other.last_seen
+    source: str = "ios"
+    capabilities: List[str] = field(default_factory=lambda: list(IOS_CAPABILITIES))
 
     @staticmethod
     def from_pymobiledevice3_output(info: dict) -> "IOSDevice":
@@ -87,6 +56,7 @@ class IOSDevice:
             name=str(name) or str(udid),
             product_type=str(product_type),
             ios_version=str(ios_version),
+            os_version=str(ios_version),
             connected=False,
             trusted=bool(info.get("trusted", reachable)),
         )

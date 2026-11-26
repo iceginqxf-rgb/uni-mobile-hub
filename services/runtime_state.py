@@ -91,18 +91,20 @@ class RuntimeState:
         with self._lock:
             return list(self.devices.values())
 
-    def remove_missing(self, present_udids: set[str]) -> list[str]:
+    def remove_missing(self, present_udids: set[str], source: Optional[str] = None) -> list[str]:
         """Drop devices no longer physically present (unplugged) and return their
-        udids so the caller can tear down forwards/WDA.
+        udids so the caller can tear down forwards/sessions.
 
-        Previously this only flipped ``connected=False`` and KEPT the entry, so an
-        unplugged device lingered in ``list_devices()`` forever — showing a ghost
-        "连接" card and never registering as a hotplug disconnect. A device absent
-        from a fresh usbmux scan is gone; remove it (and its viewer/activity
-        bookkeeping) entirely."""
+        When ``source`` is supplied, only devices owned by that adapter source
+        are evaluated — preventing an iOS scan from dropping live Android or
+        remote-node devices (and vice versa).
+        """
         gone = []
         with self._lock:
             for udid in list(self.devices.keys()):
+                dev = self.devices.get(udid)
+                if source is not None and getattr(dev, "source", None) != source:
+                    continue
                 if udid not in present_udids:
                     gone.append(udid)
                     self.devices.pop(udid, None)
