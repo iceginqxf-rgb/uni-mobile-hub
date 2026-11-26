@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-# Imported lazily-typed to avoid a hard import cycle at module load.
-from ios.device_models import IOSDevice
+# Imported type-only to avoid a hard import cycle at module load.
+if TYPE_CHECKING:
+    from ios.device_models import IOSDevice
 
 
 class RuntimeState:

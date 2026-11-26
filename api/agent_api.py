@@ -28,10 +28,10 @@ def _body() -> dict:
 def _ensure_ready(udid: str):
     dev = state.get_device(udid)
     if dev is None:
-        get_adapter().discover_devices()
+        get_adapter().discover()
         dev = state.get_device(udid)
     if dev is None:
-        raise AppError(ErrorCode.DEVICE_NOT_FOUND, f"Device '{udid}' is offline or not connected")
+        raise AppError(ErrorCode.NOT_FOUND, f"Device '{udid}' is offline or not connected")
 
     user = auth_service.current_user()
     if not user:
@@ -59,7 +59,7 @@ def _normalize_app_id(body: dict) -> str:
 @bp.route("/devices", methods=["GET"])
 @api
 def agent_list_devices():
-    devices = get_adapter().discover_devices()
+    devices = get_adapter().discover()
     return {"devices": [d.to_dict() for d in devices]}
 
 

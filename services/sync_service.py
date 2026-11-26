@@ -37,7 +37,7 @@ class SyncService:
 
     def set_group(self, master: str, slaves: List[str]) -> dict:
         if not master or not state.get_device(master):
-            raise AppError(ErrorCode.DEVICE_NOT_FOUND, f"Master device not found: {master}")
+            raise AppError(ErrorCode.NOT_FOUND, f"Master device not found: {master}")
 
         seen = set()
         cleaned: List[str] = []
@@ -46,7 +46,7 @@ class SyncService:
             if not sid or sid == master or sid in seen:
                 continue
             if not state.get_device(sid):
-                raise AppError(ErrorCode.DEVICE_NOT_FOUND, f"Slave device not found: {sid}")
+                raise AppError(ErrorCode.NOT_FOUND, f"Slave device not found: {sid}")
             seen.add(sid)
             cleaned.append(sid)
 

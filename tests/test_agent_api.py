@@ -20,7 +20,7 @@ class _FakeAdapter:
         self._controllers = controllers
         self.connect_calls = []
 
-    def discover_devices(self):
+    def discover(self):
         return list(state.devices.values())
 
     def adapter_for(self, udid: str):
