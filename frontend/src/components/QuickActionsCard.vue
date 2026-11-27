@@ -16,6 +16,11 @@
 
     <!-- Accessibility software-button toggles via go-ios. -->
     <template v-else>
+      <div class="row" style="flex-wrap: wrap; gap: 6px; margin-top: 8px">
+        <button @click="ctrl.pressButton('home')">{{ t("control.home") }}</button>
+        <button @click="ctrl.pressButton('recent')">{{ t("control.recent") }}</button>
+        <button @click="ctrl.pressButton('lock')">{{ t("control.lock") }}</button>
+      </div>
       <label class="muted" style="font-size: 0.72rem; display: block; margin-top: 10px">{{ t("quick.accessibility") }}</label>
       <div class="row" style="flex-wrap: wrap; gap: 6px; margin-top: 4px">
         <button @click="toggleA11y('assistivetouch')">{{ t("quick.assistiveTouch") }}</button>

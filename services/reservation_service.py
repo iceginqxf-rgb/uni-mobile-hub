@@ -138,6 +138,14 @@ def release(device_id: str, *, reason: str = "released") -> bool:
     _teardown(device_id)
     if deleted:
         events.emit("device_released", {"device_id": device_id, "reason": reason})
+        events.emit(
+            "devices:changed",
+            {
+                "devices": [d.to_dict() for d in state.list_devices()],
+                "reason": reason,
+                "udid": device_id,
+            },
+        )
         _log.info("reservation released: %s (%s)", device_id[:12], reason)
     return deleted
 

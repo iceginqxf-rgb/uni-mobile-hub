@@ -90,6 +90,7 @@ def load_config() -> dict:
         # 0 disables. Shared device pool hygiene.
         "IOS_DEVICE_IDLE_TIMEOUT": int(g("IOS_DEVICE_IDLE_TIMEOUT", "300")),
         "IOS_ENABLE_WEBRTC": g("IOS_ENABLE_WEBRTC", "0"),
+        "IOS_ENABLE_HEVC": g("IOS_ENABLE_HEVC", "0"),
         # WebRTC software re-encode bitrate cap (bps) — a ceiling; REMB throttles
         # below it on limited bandwidth. aiortc's 3 Mbps default blurs full-retina
         # motion; ~6 Mbps is a safe sharper default. Host-side libx264 (won't crash

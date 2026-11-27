@@ -134,3 +134,49 @@ class TestCrossOSControlPolish(unittest.TestCase):
         self.assertEqual([a["type"] for a in seq], ["pointerMove", "pointerDown", "pointerMove", "pause", "pointerUp"])
         self.assertEqual((seq[0]["x"], seq[0]["y"]), (214, 924))
         self.assertEqual(seq[3]["duration"], 900)
+
+    def test_health_disables_hevc_unless_explicitly_enabled(self):
+        from flask import Flask
+        from api.health_api import bp as health_bp
+
+        class _StubAdapter:
+            def __init__(self, cfg):
+                self.config = cfg
+                self.webrtc = None
+
+            def is_backend_available(self):
+                return True
+
+        app = Flask(__name__)
+        app.register_blueprint(health_bp)
+        with (
+            patch("api.health_api.get_adapter", return_value=_StubAdapter({"IOS_ENABLE_HEVC": "0"})),
+            patch("api.health_api._hevc_available", return_value=True),
+        ):
+            with app.test_client() as client:
+                r = client.get("/api/health")
+                self.assertEqual(r.status_code, 200)
+                self.assertFalse(r.get_json()["data"]["hevc_available"])
+
+        with (
+            patch("api.health_api.get_adapter", return_value=_StubAdapter({"IOS_ENABLE_HEVC": "1"})),
+            patch("api.health_api._hevc_available", return_value=True),
+        ):
+            with app.test_client() as client:
+                r = client.get("/api/health")
+                self.assertTrue(r.get_json()["data"]["hevc_available"])
+
+    def test_reservation_release_emits_devices_changed(self):
+        from services import reservation_service as reservations
+
+        emitted = []
+        with (
+            patch.object(reservations, "get_conn") as mock_conn,
+            patch.object(reservations, "_teardown"),
+            patch("services.reservation_service.events.emit", side_effect=lambda ev, p: emitted.append((ev, p))),
+        ):
+            mock_conn.return_value.execute.return_value.rowcount = 1
+            self.assertTrue(reservations.release("DEV-1", reason="released"))
+        event_names = [e[0] for e in emitted]
+        self.assertIn("device_released", event_names)
+        self.assertIn("devices:changed", event_names)

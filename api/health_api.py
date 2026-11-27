@@ -26,6 +26,8 @@ def _hevc_available() -> bool:
 @api
 def health():
     adapter = get_adapter()
+    cfg = getattr(adapter, "config", {}) or {}
+    hevc_enabled = str(cfg.get("IOS_ENABLE_HEVC", "0")) == "1"
     return {
         "status": "ok",
         "platform": "ios",
@@ -33,5 +35,5 @@ def health():
         "python": sys.version.split()[0],
         "pymobiledevice3_available": adapter.is_backend_available(),
         "webrtc_enabled": bool(getattr(adapter, "webrtc", None) and adapter.webrtc.enabled),
-        "hevc_available": _hevc_available(),
+        "hevc_available": hevc_enabled and _hevc_available(),
     }

@@ -42,6 +42,74 @@ _ANDROID_BUTTON_KEYCODES = {
 }
 
 
+def _normalize_android_info(raw: dict, *, udid: str, node_id: str) -> dict:
+    """Normalize WebAppFlaskscrcpy's /info fields to match DeviceInfoCard schema."""
+    info = dict(raw or {})
+    info.setdefault("udid", udid)
+    info.setdefault("serial", info.get("device_id") or udid)
+    info["platform"] = "android"
+    info["node_id"] = node_id
+
+    brand = str(info.get("brand") or info.get("manufacturer") or "").strip()
+    model = str(info.get("model") or info.get("name") or "").strip()
+    if brand and model and not model.lower().startswith(brand.lower()):
+        marketing = f"{brand} {model}"
+    else:
+        marketing = model or brand or str(udid)
+    info.setdefault("marketing", marketing)
+    info.setdefault("name", marketing)
+
+    soc = str(info.get("soc_model") or "").strip()
+    soc_mfg = str(info.get("soc_manufacturer") or "").strip()
+    soc_label = f"{soc_mfg} {soc}".strip() if soc else soc_mfg
+    if soc_label and not info.get("soc"):
+        info["soc"] = soc_label
+
+    mfr = str(info.get("manufacturer") or brand or "").strip()
+    if not info.get("product_type"):
+        parts = [p for p in (mfr, soc_label) if p]
+        info["product_type"] = " · ".join(parts)
+
+    if not info.get("connection") and info.get("connection_type"):
+        info["connection"] = str(info["connection_type"])
+    if not info.get("os_version") and info.get("android_version"):
+        info["os_version"] = str(info["android_version"])
+    if not info.get("build") and info.get("build_id"):
+        info["build"] = str(info["build_id"])
+
+    abi = str(info.get("abi") or "").strip()
+    sdk = info.get("sdk")
+    if not info.get("cpu_arch") and (sdk or abi):
+        info["cpu_arch"] = f"API {sdk} · {abi}" if (sdk and abi) else (abi or f"API {sdk}")
+
+    rw, rh = info.get("resolution_width"), info.get("resolution_height")
+    if not info.get("resolution") and rw and rh:
+        info["resolution"] = {"w": int(rw), "h": int(rh)}
+
+    if not info.get("battery") and info.get("battery_level") is not None:
+        status_str = str(info.get("battery_status") or "").lower()
+        info["battery"] = {
+            "level": int(info["battery_level"]),
+            "charging": status_str in ("charging", "full", "ac", "usb"),
+            "temp_c": info.get("battery_temp_c"),
+        }
+    if not info.get("storage") and info.get("storage_total_bytes"):
+        info["storage"] = {
+            "total": int(info["storage_total_bytes"]),
+            "used": int(info.get("storage_used_bytes") or 0),
+        }
+    if not info.get("memory") and info.get("memory_total_bytes"):
+        info["memory"] = {
+            "total": int(info["memory_total_bytes"]),
+            "used": int(info.get("memory_used_bytes") or 0),
+        }
+    if not info.get("model_number") and model:
+        info["model_number"] = model
+    if not info.get("hardware_model") and soc_label:
+        info["hardware_model"] = soc_label
+    return info
+
+
 class RemoteNodeClient:
     """HTTP client targeting a remote ``uni-mobile-hub`` or ``WebAppFlaskscrcpy`` node."""
 
@@ -689,11 +757,7 @@ class RemoteNodeAdapter:
         q = urllib.parse.quote(remote_id)
         if self.node.type == "scrcpy":
             body = self.client.request("GET", f"/api/device/{q}/info")
-            info = dict(body.get("info") or {})
-            info.setdefault("udid", udid)
-            info.setdefault("platform", "android")
-            info["node_id"] = self.node.id
-            return info
+            return _normalize_android_info(dict(body.get("info") or {}), udid=udid, node_id=self.node.id)
         body = self.client.request("GET", f"/api/devices/{q}/info")
         info = dict((body.get("data") or {}).get("info") or {})
         info["node_id"] = self.node.id

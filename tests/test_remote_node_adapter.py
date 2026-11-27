@@ -185,3 +185,47 @@ def test_remote_uni_node_and_offline_isolation():
     provider.start()
     assert provider.read_frame() == _jpeg_bytes()
     provider.stop()
+
+
+def test_normalize_android_info_maps_metrics_and_specs():
+    from nodes.remote_node_adapter import _normalize_android_info
+
+    out = _normalize_android_info(
+        {
+            "abi": "arm64-v8a",
+            "android_version": "16",
+            "battery_level": 88,
+            "battery_status": "Charging",
+            "battery_temp_c": 29.4,
+            "brand": "Redmi",
+            "build_id": "BP2A.1",
+            "connection_type": "usb",
+            "density_dpi": 450,
+            "ip_address": "192.168.1.50",
+            "manufacturer": "Xiaomi",
+            "memory_total_bytes": 8000000000,
+            "memory_used_bytes": 4000000000,
+            "model": "Redmi K30 Pro",
+            "resolution_width": 1080,
+            "resolution_height": 2400,
+            "sdk": 36,
+            "soc_manufacturer": "Qualcomm",
+            "soc_model": "SM8250",
+            "storage_total_bytes": 128000000000,
+            "storage_used_bytes": 64000000000,
+            "wifi_ssid": "Office-5G",
+        },
+        udid="SER-123",
+        node_id="win-scrcpy",
+    )
+    assert out["marketing"] == "Redmi K30 Pro"
+    assert out["os_version"] == "16"
+    assert out["cpu_arch"] == "API 36 · arm64-v8a"
+    assert out["resolution"] == {"w": 1080, "h": 2400}
+    assert out["battery"] == {"level": 88, "charging": True, "temp_c": 29.4}
+    assert out["storage"] == {"total": 128000000000, "used": 64000000000}
+    assert out["memory"] == {"total": 8000000000, "used": 4000000000}
+    assert out["soc"] == "Qualcomm SM8250"
+    assert out["ip_address"] == "192.168.1.50"
+    assert out["wifi_ssid"] == "Office-5G"
+    assert out["node_id"] == "win-scrcpy"

@@ -57,7 +57,7 @@
       <!-- CENTER: live screen. The footer "更多" button toggles the control panel. -->
       <DeviceStage
         :udid="udid"
-        :connected="!!device?.connected"
+        :connected="canCtl && !!device?.connected"
         :more-open="showPanels"
         @toggle-more="showPanels = !showPanels"
       />
@@ -188,6 +188,11 @@ onMounted(() => {
   // opened/selected. The default-landing fallback stays idle to avoid eagerly
   // streaming a device nobody asked for (host-side encode is expensive).
   if (props.autoConnect && canCtl.value && !device.value?.connected) connectDevice();
+});
+
+// Claiming 占用 immediately unlocks & auto-connects the device in one click.
+watch(canCtl, (ok, prev) => {
+  if (ok && !prev && !device.value?.connected) connectDevice();
 });
 </script>
 

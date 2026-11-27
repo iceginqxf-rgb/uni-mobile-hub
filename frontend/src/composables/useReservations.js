@@ -53,14 +53,10 @@ export function useReservations() {
 
   const get = (deviceId) => state.byDevice[deviceId] || null;
 
-  // Whether the current user may control (stream/input/files/apps) a device —
-  // mirrors the backend reservations.assert_owner: admins/super_admins bypass
-  // occupation entirely; a normal user must hold THIS device's reservation.
-  // An unreserved device is NOT free-for-all for normal users — they must claim
-  // it first (anti-abuse gate).
+  // Consistent reservation gate in UI: EVERY user (including admin) clicks
+  // 占用 to unlock a device's stream & control surface, preventing accidental
+  // unreserved manipulation while keeping admin multi-device & force-release.
   function canControl(deviceId) {
-    const { isAdmin } = useAuth();
-    if (isAdmin.value) return true;
     return !!get(deviceId)?.is_mine;
   }
 

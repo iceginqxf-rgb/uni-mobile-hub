@@ -21,12 +21,15 @@
 
     <template v-if="info">
       <!-- metric rings (only render those the device actually reports) -->
-      <div v-if="info.battery || info.storage" class="metric-grid">
+      <div v-if="info.battery || info.storage || info.memory" class="metric-grid">
         <div v-if="info.battery" class="metric-tile">
           <Ring :pct="info.battery.level" :tone="batteryTone" />
           <div class="metric-meta">
             <div class="mm-label">{{ t("info.battery") }}</div>
-            <div class="mm-value">{{ info.battery.level }}%<span v-if="info.battery.charging"> ⚡</span></div>
+            <div class="mm-value">
+              {{ info.battery.level }}%<span v-if="info.battery.charging"> ⚡</span>
+              <span v-if="info.battery.temp_c" class="muted" style="font-size: 0.72rem"> · {{ info.battery.temp_c }}°C</span>
+            </div>
           </div>
         </div>
         <div v-if="info.storage" class="metric-tile">
@@ -34,6 +37,13 @@
           <div class="metric-meta">
             <div class="mm-label">{{ t("info.storage") }}</div>
             <div class="mm-value">{{ gb(info.storage.used) }} / {{ gb(info.storage.total) }}</div>
+          </div>
+        </div>
+        <div v-if="info.memory" class="metric-tile">
+          <Ring :pct="memoryPct" :tone="memoryTone" />
+          <div class="metric-meta">
+            <div class="mm-label">{{ t("info.memory") }}</div>
+            <div class="mm-value">{{ gb(info.memory.used) }} / {{ gb(info.memory.total) }}</div>
           </div>
         </div>
       </div>
@@ -77,11 +87,15 @@ watch(() => props.udid, load, { immediate: true });
 const storagePct = computed(() =>
   info.value?.storage ? Math.round((info.value.storage.used / info.value.storage.total) * 100) : 0
 );
+const memoryPct = computed(() =>
+  info.value?.memory ? Math.round((info.value.memory.used / info.value.memory.total) * 100) : 0
+);
 const batteryTone = computed(() => {
   const l = info.value?.battery?.level ?? 100;
   return l < 20 ? "danger" : l < 50 ? "warn" : "ok";
 });
 const storageTone = computed(() => (storagePct.value > 90 ? "danger" : storagePct.value > 75 ? "warn" : "ok"));
+const memoryTone = computed(() => (memoryPct.value > 90 ? "danger" : memoryPct.value > 75 ? "warn" : "ok"));
 
 function gb(bytes) {
   return (bytes / 1e9).toFixed(1) + "G";
@@ -104,12 +118,18 @@ const rows = computed(() => {
   const osVer = i.os_version || i.ios_version;
   add(t("info.version"), osVer && `${osVer}${i.build ? " (" + i.build + ")" : ""}`);
   add("SDK / ABI", i.cpu_arch, true);
-  if (i.resolution) add(t("info.resolution"), `${i.resolution.w} × ${i.resolution.h}`);
+  if (i.resolution) {
+    const dpi = i.density_dpi ? ` (${i.density_dpi} dpi)` : "";
+    add(t("info.resolution"), `${i.resolution.w} × ${i.resolution.h}${dpi}`);
+  }
+  add(t("info.soc"), i.soc);
   add(t("info.modelNumber"), i.model_number, true);
   add(t("info.hardwareModel"), i.hardware_model, true);
   add(t("info.activation"), activationLabel(i.activation_state));
   add(t("info.serial"), i.serial, true);
   add(t("info.udid"), i.udid, true);
+  add(t("info.ip"), i.ip_address, true);
+  add(t("info.wifi"), i.wifi_ssid);
   add(t("info.imei"), i.imei, true);
   add(t("info.imei2"), i.imei2, true);
   add(t("info.wifiMac"), i.wifi_mac, true);
