@@ -7,6 +7,7 @@
       v-model="activeNav"
       :is-admin="auth.isAdmin.value"
       :sidebar-open="sidebarOpen"
+      :offline-nodes="offlineNodes"
       @toggle-sidebar="toggleSidebar"
     />
 
@@ -72,6 +73,12 @@
 
       <main class="wb-workspace" :class="{ 'split-host': activeNav === 'devices' && layoutMode !== 'single' }">
         <AdminPanel v-if="activeNav === 'admin' && auth.isAdmin.value" @close="activeNav = 'devices'" />
+
+        <NodesPanel
+          v-else-if="activeNav === 'nodes'"
+          @open-device="onPaletteOpenDevice"
+          @refresh-devices="refreshDevices(true)"
+        />
 
         <SyncPanel v-else-if="activeNav === 'sync'" />
 
@@ -151,6 +158,7 @@
     @add-split="onPaletteAddSplit"
     @set-layout="onPaletteSetLayout"
     @select-overview="onPaletteOverview"
+    @open-nodes="activeNav = 'nodes'"
     @toggle-sidebar="toggleSidebar"
     @toggle-inspector="toggleInspector"
   />
@@ -164,6 +172,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DeviceDetailView from "./views/DeviceDetailView.vue";
 import LoginView from "./components/LoginView.vue";
 import AdminPanel from "./components/AdminPanel.vue";
+import NodesPanel from "./components/NodesPanel.vue";
 import SyncPanel from "./components/SyncPanel.vue";
 import DeviceMatrix from "./components/DeviceMatrix.vue";
 import NavRail from "./components/NavRail.vue";
@@ -179,6 +188,7 @@ import ConfirmDialog from "./components/ConfirmDialog.vue";
 import { useAuth } from "./composables/useAuth";
 import { useReservations } from "./composables/useReservations";
 import { useDevices } from "./composables/useDevices";
+import { useNodes } from "./composables/useNodes";
 import { useSync } from "./composables/useSync";
 import { useWorkbench } from "./composables/useWorkbench";
 import { useUiI18n } from "./composables/useUiI18n";
@@ -187,6 +197,7 @@ const auth = useAuth();
 const { t } = useUiI18n();
 const { fetchReservations } = useReservations();
 const { devices, loading: devicesLoading, refresh: refreshDevices, checkHealth } = useDevices();
+const { offlineNodes, refresh: refreshNodes } = useNodes();
 const { refresh: refreshSync } = useSync();
 const {
   sidebarOpen,
@@ -221,7 +232,13 @@ const {
 
 const activeNav = ref("devices");
 const sectionTitle = computed(() =>
-  activeNav.value === "settings" ? t("nav.settings") : activeNav.value === "admin" ? t("app.admin") : t("nav.sync"),
+  activeNav.value === "settings"
+    ? t("nav.settings")
+    : activeNav.value === "admin"
+      ? t("app.admin")
+      : activeNav.value === "nodes"
+        ? t("nav.nodes")
+        : t("nav.sync"),
 );
 
 const currentFocusedUdid = computed(() => {
@@ -268,7 +285,7 @@ async function doLogout() {
 
 async function loadDevices() {
   await checkHealth();
-  await Promise.all([refreshDevices(true), refreshSync()]);
+  await Promise.all([refreshDevices(true), refreshSync(), refreshNodes(true)]);
 }
 watch(() => auth.state.user, (u) => { if (u) { fetchReservations(); loadDevices(); } });
 watch(devices, (list) => { if (list.length) reconcileDevices(list); });

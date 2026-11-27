@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from contextlib import suppress
+import time
 
 from flask import Blueprint
 
 from api import api
 from nodes.remote_node_adapter import RemoteNodeAdapter
+from nodes.scrcpy_webrtc_relay import scrcpy_webrtc_relay
 from services import get_adapter
 from services.ios_stream_service import IOSStreamService
 from services.runtime_state import state
@@ -31,6 +33,8 @@ def _local_adapter_entry(adapter) -> dict:
         "last_ok_at": None,
         "last_error": "",
         "consecutive_failures": 0,
+        "retry_in_sec": 0.0,
+        "reconnectable": False,
         "device_count": len(devs),
         "source_id": sid,
     }
@@ -49,20 +53,29 @@ def list_nodes():
             nodes.append(_local_adapter_entry(adapter))
 
     stream_svc = IOSStreamService(getattr(registry, "config", {}))
+    relay_counts = scrcpy_webrtc_relay.active_udids()
     streams = []
     for d in state.list_devices():
         st = stream_svc.get_status(d.udid)
+        streaming = bool(st.get("running"))
+        provider = st.get("provider")
+        viewers = int(st.get("subscribers") or 0)
+        if not streaming and relay_counts.get(d.udid, 0) > 0:
+            streaming = True
+            provider = "scrcpy-webrtc"
+            viewers = relay_counts[d.udid]
         streams.append({
             "udid": d.udid,
             "name": d.name,
             "platform": d.platform,
             "node_id": d.node_id,
             "connected": bool(d.connected),
-            "streaming": bool(st.get("running")),
-            "provider": st.get("provider"),
+            "streaming": streaming,
+            "provider": provider,
             "fps": st.get("fps", 0.0),
+            "viewers": viewers,
         })
-    return {"nodes": nodes, "streams": streams}
+    return {"nodes": nodes, "streams": streams, "server_time": time.time()}
 
 
 @bp.post("/<node_id>/reconnect")

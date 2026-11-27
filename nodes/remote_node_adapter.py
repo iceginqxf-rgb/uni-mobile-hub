@@ -437,6 +437,11 @@ class RemoteNodeAdapter:
 
     def node_status(self) -> dict:
         with self._lock:
+            retry_in = (
+                round(max(0.0, self._next_retry_at - time.monotonic()), 1)
+                if not self._online and self._next_retry_at > 0
+                else 0.0
+            )
             return {
                 "id": self.node.id,
                 "type": self.node.type,
@@ -446,6 +451,8 @@ class RemoteNodeAdapter:
                 "last_ok_at": self._last_ok_at,
                 "last_error": self._last_error,
                 "consecutive_failures": self._consecutive_failures,
+                "retry_in_sec": retry_in,
+                "reconnectable": True,
                 "device_count": len(self._remote_ids),
                 "source_id": self.source_id,
             }

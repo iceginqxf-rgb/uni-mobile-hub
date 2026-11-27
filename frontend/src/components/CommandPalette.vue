@@ -67,6 +67,7 @@ const emit = defineEmits([
   "add-split",
   "set-layout",
   "select-overview",
+  "open-nodes",
   "toggle-sidebar",
   "toggle-inspector",
 ]);
@@ -159,6 +160,13 @@ const allItems = computed(() => {
       label: t("workbench.overview"),
       hint: "GRID",
       run: () => emit("select-overview"),
+    },
+    {
+      id: "ws-nodes",
+      group: t("palette.grpWorkspace"),
+      label: t("nodes.title"),
+      hint: "NODES",
+      run: () => emit("open-nodes"),
     },
     {
       id: "ws-single",

@@ -14,6 +14,13 @@
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" v-html="it.icon" />
+      <span
+        v-if="it.id === 'nodes' && offlineNodes > 0"
+        class="nav-alert-badge mono"
+        :title="t('nodes.offlineCount', { n: offlineNodes })"
+      >
+        {{ offlineNodes > 9 ? "9+" : offlineNodes }}
+      </span>
     </button>
 
     <button
@@ -56,6 +63,7 @@ defineProps({
   modelValue: { type: String, default: "devices" },
   isAdmin: { type: Boolean, default: false },
   sidebarOpen: { type: Boolean, default: true },
+  offlineNodes: { type: Number, default: 0 },
 });
 defineEmits(["update:modelValue", "toggle-sidebar"]);
 const { t } = useUiI18n();
@@ -65,6 +73,11 @@ const items = computed(() => [
     id: "devices",
     label: t("nav.devices"),
     icon: '<rect x="5" y="2" width="14" height="20" rx="3"/><line x1="9" y1="18" x2="15" y2="18"/>',
+  },
+  {
+    id: "nodes",
+    label: t("nav.nodes"),
+    icon: '<rect x="2" y="3" width="20" height="7" rx="1"/><rect x="2" y="14" width="20" height="7" rx="1"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/>',
   },
   {
     id: "sync",
@@ -78,3 +91,24 @@ const items = computed(() => [
   },
 ]);
 </script>
+
+<style scoped>
+.nav-item {
+  position: relative;
+}
+.nav-alert-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: var(--danger);
+  border-radius: 50%;
+}
+</style>

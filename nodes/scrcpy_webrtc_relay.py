@@ -201,6 +201,14 @@ class ScrcpyWebRTCRelay:
             return True
         return False
 
+    def active_udids(self) -> Dict[str, int]:
+        """Count active relayed WebRTC viewer sessions keyed by device UDID."""
+        counts: Dict[str, int] = {}
+        with self._lock:
+            for _sid, udid in self._sessions:
+                counts[udid] = counts.get(udid, 0) + 1
+        return counts
+
     def _drop_entry(self, key: Tuple[str, str]) -> Optional[dict]:
         with self._lock:
             return self._sessions.pop(key, None)

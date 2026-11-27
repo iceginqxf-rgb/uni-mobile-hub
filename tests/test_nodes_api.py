@@ -12,6 +12,7 @@ from flask import Flask
 from api.nodes_api import bp as nodes_bp
 from nodes.node_config import RemoteNodeConfig
 from nodes.remote_node_adapter import RemoteNodeAdapter
+from nodes.scrcpy_webrtc_relay import scrcpy_webrtc_relay
 from services.adapter_registry import AdapterRegistry
 from services.runtime_state import state
 
@@ -72,6 +73,8 @@ class TestNodesApi(unittest.TestCase):
         st_down = remote.node_status()
         self.assertFalse(st_down["online"])
         self.assertEqual(st_down["consecutive_failures"], 1)
+        self.assertGreater(st_down["retry_in_sec"], 0.0)
+        self.assertTrue(st_down["reconnectable"])
         self.assertIn("node down", st_down["last_error"])
 
         # Subsequent discover within backoff window skips network poll
@@ -86,10 +89,16 @@ class TestNodesApi(unittest.TestCase):
             with app.test_client() as client:
                 r = client.get("/api/nodes")
                 self.assertEqual(r.status_code, 200)
-                nodes = r.get_json()["data"]["nodes"]
+                payload = r.get_json()["data"]
+                self.assertIn("server_time", payload)
+                nodes = payload["nodes"]
                 self.assertEqual(len(nodes), 2)
+                local_node = [n for n in nodes if n["id"] == "ios"][0]
+                self.assertFalse(local_node["reconnectable"])
+                self.assertEqual(local_node["retry_in_sec"], 0.0)
                 rog_node = [n for n in nodes if n["id"] == "rog"][0]
                 self.assertFalse(rog_node["online"])
+                self.assertGreater(rog_node["retry_in_sec"], 0.0)
 
                 # force reconnect bypasses backoff and restores 2 devices
                 r2 = client.post("/api/nodes/rog/reconnect")
@@ -98,6 +107,22 @@ class TestNodesApi(unittest.TestCase):
                 self.assertTrue(reconn["online"])
                 self.assertEqual(reconn["device_count"], 2)
                 self.assertEqual(reconn["consecutive_failures"], 0)
+                self.assertEqual(reconn["retry_in_sec"], 0.0)
+
+                # Active relayed scrcpy WebRTC session surfaces in /api/nodes streams
+                fake_key = ("test-sid", "AND-1")
+                with scrcpy_webrtc_relay._lock:
+                    scrcpy_webrtc_relay._sessions[fake_key] = {"remote_id": "AND-1", "sio": object()}
+                try:
+                    r3 = client.get("/api/nodes")
+                    self.assertEqual(r3.status_code, 200)
+                    streams = {s["udid"]: s for s in r3.get_json()["data"]["streams"]}
+                    self.assertTrue(streams["AND-1"]["streaming"])
+                    self.assertEqual(streams["AND-1"]["provider"], "scrcpy-webrtc")
+                    self.assertEqual(streams["AND-1"]["viewers"], 1)
+                finally:
+                    with scrcpy_webrtc_relay._lock:
+                        scrcpy_webrtc_relay._sessions.pop(fake_key, None)
 
                 # Unknown node -> 404
                 self.assertEqual(client.post("/api/nodes/missing/reconnect").status_code, 404)
