@@ -61,11 +61,13 @@ def register_blueprints(app) -> None:
     from api.reservations_api import bp as reservations_bp
     from api.sync_api import bp as sync_bp
     from api.agent_api import bp as agent_bp
+    from api.nodes_api import bp as nodes_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(reservations_bp)
     app.register_blueprint(sync_bp)
     app.register_blueprint(agent_bp)
+    app.register_blueprint(nodes_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(devices_bp)
     app.register_blueprint(control_bp)

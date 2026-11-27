@@ -343,6 +343,12 @@ class RemoteNodeAdapter:
         self._controllers: Dict[str, RemoteNodeController] = {}
         self._remote_ids: Dict[str, str] = {}
         self._lock = threading.RLock()
+        self._online: bool = False
+        self._last_ok_at: Optional[float] = None
+        self._last_latency_ms: Optional[float] = None
+        self._last_error: str = ""
+        self._consecutive_failures: int = 0
+        self._next_retry_at: float = 0.0
 
     def is_backend_available(self) -> bool:
         return bool(self.node.url)
@@ -361,17 +367,55 @@ class RemoteNodeAdapter:
             return str(ep["remote_udid"])
         return udid
 
-    def discover(self) -> List[MobileDevice]:
+    def node_status(self) -> dict:
+        with self._lock:
+            return {
+                "id": self.node.id,
+                "type": self.node.type,
+                "url": self.node.public_url,
+                "online": self._online,
+                "latency_ms": self._last_latency_ms,
+                "last_ok_at": self._last_ok_at,
+                "last_error": self._last_error,
+                "consecutive_failures": self._consecutive_failures,
+                "device_count": len(self._remote_ids),
+                "source_id": self.source_id,
+            }
+
+    def force_reconnect(self) -> dict:
+        with self._lock:
+            self._consecutive_failures = 0
+            self._next_retry_at = 0.0
+        with suppress(Exception):
+            self.client._client.cookies.clear()
+        with suppress(AppError):
+            self.client.login()
+        self.discover(force=True)
+        return self.node_status()
+
+    def discover(self, force: bool = False) -> List[MobileDevice]:
+        with self._lock:
+            if not force and not self._online and self._consecutive_failures > 0 and time.monotonic() < self._next_retry_at:
+                return [d for d in state.list_devices() if getattr(d, "source", None) == self.source_id]
+
+        t0 = time.monotonic()
         try:
             items = self._fetch_remote_devices()
         except Exception as exc:  # noqa: BLE001 — isolate node outages cleanly
             _log.warning("remote node '%s' discover failed: %s", self.node.id, exc)
+            with self._lock:
+                self._online = False
+                self._consecutive_failures += 1
+                self._last_error = str(exc)[:300]
+                delay = min(30.0, 2.0 * (2 ** (self._consecutive_failures - 1)))
+                self._next_retry_at = time.monotonic() + delay
             for gone_id in state.remove_missing(set(), source=self.source_id):
                 with self._lock:
                     self._remote_ids.pop(gone_id, None)
                     self._controllers.pop(gone_id, None)
             return []
 
+        rtt = round((time.monotonic() - t0) * 1000.0, 1)
         present: set[str] = set()
         out: List[MobileDevice] = []
         for dev in items:
@@ -384,6 +428,14 @@ class RemoteNodeAdapter:
             with self._lock:
                 self._remote_ids.pop(gone_id, None)
                 self._controllers.pop(gone_id, None)
+
+        with self._lock:
+            self._online = True
+            self._last_ok_at = time.time()
+            self._last_latency_ms = rtt
+            self._last_error = ""
+            self._consecutive_failures = 0
+            self._next_retry_at = 0.0
         return out
 
     def _fetch_remote_devices(self) -> List[MobileDevice]:
