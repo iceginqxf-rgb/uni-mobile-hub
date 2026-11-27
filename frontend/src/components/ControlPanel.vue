@@ -171,5 +171,5 @@ function downloadShot() {
 
 <style scoped>
 .block { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
-.shot { margin-top: 8px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+.shot { margin-top: 8px; max-width: 100%; border: 1px solid var(--border); border-radius: 0; }
 </style>

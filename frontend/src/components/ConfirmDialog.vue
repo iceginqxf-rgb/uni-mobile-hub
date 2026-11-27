@@ -61,7 +61,7 @@ watch(
 .cd-box {
   width: 100%; max-width: 360px; padding: 16px 16px 14px;
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  border-radius: 8px; box-shadow: var(--shadow);
+  border-radius: 0; box-shadow: var(--shadow);
   animation: cd-in 0.14s ease;
 }
 .cd-msg {
@@ -70,12 +70,12 @@ watch(
 }
 .cd-input {
   width: 100%; height: 34px; min-height: 34px; padding: 0 10px; margin: 0 0 14px;
-  border: 1px solid var(--border-strong); border-radius: 6px;
+  border: 1px solid var(--border-strong); border-radius: 0;
   background: var(--inset); color: var(--text); font-size: 0.88rem;
 }
 .cd-input:focus { outline: none; border-color: var(--primary); }
 .cd-actions { display: flex; justify-content: flex-end; gap: 8px; }
-.cd-btn { min-width: 70px; min-height: 30px; padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; }
+.cd-btn { min-width: 70px; min-height: 30px; padding: 4px 12px; border-radius: 0; font-size: 0.82rem; }
 .cd-primary { border-color: var(--primary); background: var(--primary); color: var(--primary-fg); }
 .cd-primary:hover { filter: brightness(1.08); }
 .cd-primary.danger { border-color: var(--danger); background: var(--danger); color: #fff; }

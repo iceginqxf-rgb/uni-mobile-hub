@@ -49,7 +49,7 @@ function dotClass(d) {
 }
 .dstrip-item {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
-  min-height: 34px; padding: 5px 12px; border-radius: 999px;
+  min-height: 34px; padding: 5px 12px; border-radius: 0;
   border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted);
   font-size: 0.82rem; cursor: pointer; white-space: nowrap;
   transition: border-color .15s, background .15s, color .15s;
@@ -59,11 +59,11 @@ function dotClass(d) {
   color: var(--text-strong); border-color: rgba(59, 130, 246, 0.45);
   background: rgba(59, 130, 246, 0.16);
 }
-.dstrip-item .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--muted); }
+.dstrip-item .dot { width: 7px; height: 7px; border-radius: 0; flex: 0 0 auto; background: var(--muted); }
 .dstrip-item .dot.on { background: #34d399; }
 .dstrip-item .dot.off { background: #f87171; }
 .dstrip-item .dot.idle { background: #fbbf24; }
-.plat-tag { font-size: 0.68rem; font-weight: 650; padding: 1px 5px; border-radius: 6px; }
+.plat-tag { font-size: 0.68rem; font-weight: 650; padding: 1px 5px; border-radius: 0; }
 .plat-tag.and { background: rgba(16, 185, 129, 0.16); color: #34d399; }
 .plat-tag.ios { background: rgba(59, 130, 246, 0.16); color: #60a5fa; }
 .node-tag { font-size: 0.68rem; color: #fbbf24; opacity: 0.9; }

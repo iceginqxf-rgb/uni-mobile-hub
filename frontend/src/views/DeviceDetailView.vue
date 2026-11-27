@@ -49,10 +49,10 @@
     </div>
     <div v-if="err" class="banner err">{{ err }}</div>
 
-    <div class="stage" :class="{ 'with-drawer': showPanels }">
+    <div class="stage" :class="{ 'with-drawer': showPanels, 'no-left': !inspectorOpen }">
       <!-- LEFT: reservation + device info + connection actions
            (mirrors Android's stage-left: Reservation · QuickInfo · QuickActions) -->
-      <div class="stage-left">
+      <div v-if="inspectorOpen" class="stage-left">
         <ReservationCard :udid="udid" />
         <DeviceInfoCard :udid="udid" />
         <QuickActionsCard :udid="udid" />
@@ -128,6 +128,7 @@ const props = defineProps({
   autoConnect: { type: Boolean, default: true },
   embedded: { type: Boolean, default: false },
   sleeping: { type: Boolean, default: false },
+  inspectorOpen: { type: Boolean, default: true },
 });
 const emit = defineEmits(["back", "select", "wake"]);
 
@@ -217,6 +218,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.stage.no-left {
+  grid-template-columns: minmax(0, 1fr);
+}
+.stage.no-left.with-drawer {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
 /* Control panel — hidden by default; docks as the stage's THIRD column when
    "更多" is pressed (no overlay, no page-shift). The stage simply switches from
    2 to 3 columns and the centered device recenters in the middle. Sticky so it
@@ -225,7 +232,7 @@ onUnmounted(() => {
   position: sticky; top: 16px; align-self: start; min-width: 0;
   max-height: calc(100vh - 110px); display: flex; flex-direction: column;
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  border-radius: 0; box-shadow: var(--shadow); overflow: hidden;
 }
 .panel-drawer-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 0; border-bottom: 1px solid var(--border); }
 .panel-drawer-head .tabs { flex: 1; min-width: 0; border-bottom: none; }
@@ -245,7 +252,7 @@ onUnmounted(() => {
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
   min-height: 38px; flex: 1 1 auto; white-space: nowrap; justify-content: center;
-  background: transparent; border: none; border-radius: 8px 8px 0 0;
+  background: transparent; border: none; border-radius: 0;
   color: var(--muted); padding: 8px 10px; font-weight: 500;
   box-shadow: inset 0 -2px 0 transparent;
 }

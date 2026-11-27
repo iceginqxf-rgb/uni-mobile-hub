@@ -288,10 +288,10 @@ async function onPick(ev) {
 .link-btn { min-height: 0; padding: 0; border: none; background: transparent; color: var(--primary); font-size: 0.72rem; }
 .tree {
   margin-top: 6px; max-height: 280px; overflow: auto;
-  background: var(--inset); border: 1px solid var(--border); border-radius: 8px; padding: 4px;
+  background: var(--inset); border: 1px solid var(--border); border-radius: 0; padding: 4px;
 }
 .tree-row {
-  display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px;
+  display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 0;
   font-size: 0.78rem; cursor: pointer; white-space: nowrap;
 }
 .tree-row:hover { background: var(--surface-2); }
@@ -312,7 +312,7 @@ async function onPick(ev) {
 .filemodal-box {
   display: flex; flex-direction: column; max-width: min(92vw, 1100px); max-height: 88vh;
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
+  border-radius: 0; box-shadow: var(--shadow); overflow: hidden;
 }
 .filemodal-head {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
@@ -324,14 +324,14 @@ async function onPick(ev) {
 }
 .filemodal-act {
   flex: 0 0 auto; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted); cursor: pointer;
+  border-radius: 0; border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted); cursor: pointer;
 }
 .filemodal-act:hover { color: var(--text-strong); border-color: var(--primary-2); }
 .filemodal-act svg { width: 16px; height: 16px; }
 .filemodal-body { display: grid; place-items: center; overflow: auto; padding: 12px; background: var(--inset); }
-.filemodal-body img, .filemodal-body video { max-width: 100%; max-height: calc(88vh - 120px); border-radius: 8px; display: block; }
+.filemodal-body img, .filemodal-body video { max-width: 100%; max-height: calc(88vh - 120px); border-radius: 0; display: block; }
 .filemodal-body audio { width: min(80vw, 460px); }
-.filemodal-body iframe { width: min(88vw, 900px); height: calc(88vh - 120px); border: none; background: #fff; border-radius: 8px; }
+.filemodal-body iframe { width: min(88vw, 900px); height: calc(88vh - 120px); border: none; background: #fff; border-radius: 0; }
 .fmodal-enter-active, .fmodal-leave-active { transition: opacity 0.18s ease; }
 .fmodal-enter-from, .fmodal-leave-to { opacity: 0; }
 </style>

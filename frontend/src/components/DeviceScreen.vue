@@ -1,6 +1,7 @@
 <template>
   <div
     class="screen-wrap"
+    :class="{ 'fit-parent': fitParent }"
     :data-platform="platform"
     @pointerdown.prevent="onDown"
     @pointermove.prevent="onMove"
@@ -61,6 +62,7 @@ const props = defineProps({
   hevc: { type: Boolean, default: false }, // WebCodecs canvas (native HEVC)
   rtcControl: { type: Function, default: null }, // send input over the RTC data channel
   onMedia: { type: Function, default: null }, // receives the canvas/video/img element
+  fitParent: { type: Boolean, default: false },
 });
 
 const { tap, swipe, longPress, doubleTap, pressButton } = useControl(props.udid);
@@ -288,10 +290,10 @@ function onDblClick(ev) {
   align-items: center;
   background: radial-gradient(120% 80% at 50% 0%, #0e1626, #05080f);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 0;
   overflow: hidden;
-  min-height: 260px;
-  padding: 10px;
+  min-height: 240px;
+  padding: 6px;
   box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 .screen-stage {
@@ -300,15 +302,34 @@ function onDblClick(ev) {
   justify-content: center;
   align-items: center;
   max-width: 100%;
+  max-height: 100%;
 }
 .screen-img {
   max-width: 100%;
-  max-height: min(78vh, calc(100vh - 348px));
+  max-height: calc(100vh - 180px);
   display: block;
-  border-radius: 8px;
+  border-radius: 0;
   touch-action: none;
   user-select: none;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+.screen-wrap.fit-parent {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 4px;
+}
+.screen-wrap.fit-parent .screen-stage {
+  width: 100%;
+  height: 100%;
+}
+.screen-wrap.fit-parent .screen-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: 100%;
+  object-fit: contain;
 }
 .touch-dot {
   position: absolute;
@@ -316,7 +337,7 @@ function onDblClick(ev) {
   height: 24px;
   margin-left: -12px;
   margin-top: -12px;
-  border-radius: 50%;
+  border-radius: 0;
   border: 2px solid rgba(96, 165, 250, 0.9);
   background: rgba(59, 130, 246, 0.28);
   pointer-events: none;

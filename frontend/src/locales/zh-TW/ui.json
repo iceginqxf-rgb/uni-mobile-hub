@@ -46,6 +46,42 @@
     "tabOpen": "分頁已開啟",
     "sleepingBanner": "目前裝置畫面已休眠以節省頻寬，連線與占用仍保留。"
   },
+  "fullscreen": {
+    "enter": "全螢幕控制 (Esc 退出)",
+    "exit": "退出全螢幕 (Esc)",
+    "toggle": "切換裝置全螢幕"
+  },
+  "split": {
+    "layoutLabel": "工作區版面",
+    "single": "單屏分頁模式",
+    "sideBySide": "左右雙屏對照",
+    "quadGrid": "四宮格分屏",
+    "masterBtn": "主控",
+    "slaveBtn": "從機",
+    "setMasterHint": "設為主控並同步其他分屏裝置",
+    "toggleSlaveHint": "加入/退出跨系統群控從機",
+    "masterActive": "已設為群控主控",
+    "closePane": "關閉此分屏窗格",
+    "needDevices": "請從左側裝置樹點擊「+」加入至少兩台裝置進行分屏。"
+  },
+  "inspector": {
+    "title": "裝置檢視器",
+    "info": "詳情",
+    "toggle": "展開/收合工具列 (⌘I / Ctrl+I)"
+  },
+  "palette": {
+    "title": "全域命令面板",
+    "placeholder": "搜尋裝置、切換版面、控制動作或主題…",
+    "empty": "找不到相符的命令或裝置",
+    "navHint": "選擇",
+    "runHint": "執行",
+    "grpDevice": "開啟裝置",
+    "grpSplit": "加入分屏",
+    "grpControl": "目前裝置",
+    "grpWorkspace": "工作區",
+    "grpTheme": "主題切換",
+    "addToSplit": "加入分屏"
+  },
   "devices": {
     "title": "裝置",
     "refresh": "重新整理",

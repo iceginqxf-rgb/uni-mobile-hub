@@ -127,7 +127,7 @@ async function connectOne(udid) {
 <style scoped>
 .matrix-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .flt {
-  min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem;
+  min-height: 32px; padding: 4px 12px; border-radius: 0; font-size: 0.8rem;
   background: var(--panel); border: 1px solid var(--border-strong); color: var(--muted);
 }
 .flt.active {
@@ -135,13 +135,13 @@ async function connectOne(udid) {
   background: rgba(59, 130, 246, 0.16); font-weight: 600;
 }
 .plat-badge {
-  display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 0.68rem;
+  display: inline-block; padding: 1px 6px; border-radius: 0; font-size: 0.68rem;
   font-weight: 600; margin-right: 4px;
 }
 .plat-badge.and { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 .plat-badge.ios { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 .node-badge {
-  display: inline-block; margin-left: 5px; padding: 1px 6px; border-radius: 999px;
+  display: inline-block; margin-left: 5px; padding: 1px 6px; border-radius: 0;
   font-size: 0.68rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24;
 }
 .matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }

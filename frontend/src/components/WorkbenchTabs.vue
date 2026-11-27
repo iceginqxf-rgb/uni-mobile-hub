@@ -9,7 +9,7 @@
         @click="$emit('toggle-sidebar')"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" />
+          <rect x="3" y="3" width="18" height="18" /><line x1="9" y1="3" x2="9" y2="21" />
         </svg>
       </button>
 
@@ -17,14 +17,14 @@
       <button
         type="button"
         class="wb-tab"
-        :class="{ active: activeTab === 'overview' }"
+        :class="{ active: layoutMode === 'single' && activeTab === 'overview' }"
         role="tab"
-        :aria-selected="activeTab === 'overview'"
+        :aria-selected="layoutMode === 'single' && activeTab === 'overview'"
         @click="$emit('select', 'overview')"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
         </svg>
         <span>{{ t("workbench.overview") }}</span>
       </button>
@@ -34,9 +34,9 @@
         v-for="udid in openTabs"
         :key="udid"
         class="wb-tab wb-dev-tab"
-        :class="{ active: activeTab === udid, dormant: !!dormantTabs[udid] }"
+        :class="{ active: layoutMode === 'single' && activeTab === udid, dormant: !!dormantTabs[udid] }"
         role="tab"
-        :aria-selected="activeTab === udid"
+        :aria-selected="layoutMode === 'single' && activeTab === udid"
         :title="tabTitle(udid)"
         @click="$emit('select', udid)"
       >
@@ -65,6 +65,58 @@
     </div>
 
     <div class="tb-utils">
+      <!-- Layout mode switcher: 1x1 | 1x2 Split | 2x2 Grid Split -->
+      <div class="tb-seg" role="group" :aria-label="t('split.layoutLabel')">
+        <button
+          type="button"
+          class="tb-seg-btn mono"
+          :class="{ active: layoutMode === 'single' }"
+          :title="t('split.single')"
+          @click="$emit('set-layout', 'single')"
+        >
+          1×1
+        </button>
+        <button
+          type="button"
+          class="tb-seg-btn mono"
+          :class="{ active: layoutMode === 'split-2' }"
+          :title="t('split.sideBySide')"
+          @click="$emit('set-layout', 'split-2')"
+        >
+          1×2
+        </button>
+        <button
+          type="button"
+          class="tb-seg-btn mono"
+          :class="{ active: layoutMode === 'split-grid' }"
+          :title="t('split.quadGrid')"
+          @click="$emit('set-layout', 'split-grid')"
+        >
+          2×2
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="tb-icon-btn"
+        :class="{ active: inspectorOpen }"
+        :title="t('inspector.toggle')"
+        @click="$emit('toggle-inspector')"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" /><line x1="15" y1="3" x2="15" y2="21" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="tb-cmd-btn mono"
+        :title="t('palette.title')"
+        @click="$emit('open-palette')"
+      >
+        ⌘K
+      </button>
+
       <button
         type="button"
         class="tb-icon-btn"
@@ -99,13 +151,25 @@ const props = defineProps({
   activeTab: { type: String, default: "overview" },
   dormantTabs: { type: Object, default: () => ({}) },
   sidebarOpen: { type: Boolean, default: true },
+  layoutMode: { type: String, default: "single" },
+  inspectorOpen: { type: Boolean, default: true },
   devicesLoading: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
   username: { type: String, default: "" },
   roleLabel: { type: String, default: "" },
 });
 
-defineEmits(["select", "close", "toggle-sleep", "toggle-sidebar", "refresh", "logout"]);
+defineEmits([
+  "select",
+  "close",
+  "toggle-sleep",
+  "toggle-sidebar",
+  "set-layout",
+  "toggle-inspector",
+  "open-palette",
+  "refresh",
+  "logout",
+]);
 
 const { t } = useUiI18n();
 
@@ -142,7 +206,7 @@ const dotClass = (udid) => {
   height: 28px;
   min-height: 28px;
   padding: 0 9px;
-  border-radius: 6px;
+  border-radius: 0;
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
@@ -169,22 +233,46 @@ const dotClass = (udid) => {
 .tab-dot.on { background: var(--ok); }
 .tab-dot.dormant { background: var(--warn); }
 
-.tab-os { font-size: 0.62rem; font-weight: 700; padding: 0 4px; border-radius: 3px; }
+.tab-os { font-size: 0.62rem; font-weight: 700; padding: 0 4px; border-radius: 0; }
 .tab-os.and { background: rgba(34, 197, 94, 0.14); color: var(--ok); }
 .tab-os.ios { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary-2); }
 .tab-label { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 
 .tab-mini-btn {
-  min-height: 18px; width: 18px; height: 18px; padding: 0; border-radius: 4px;
+  min-height: 18px; width: 18px; height: 18px; padding: 0; border-radius: 0;
   border: none; background: transparent; color: var(--muted); font-size: 0.68rem;
 }
 .tab-mini-btn:hover { background: var(--panel-2); color: var(--text-strong); }
 
-.tb-utils { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.tb-utils { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+.tb-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  background: var(--inset);
+}
+.tb-seg-btn {
+  min-height: 26px; height: 26px; padding: 0 7px; font-size: 0.7rem; font-weight: 600;
+  border: none; border-radius: 0; background: transparent; color: var(--muted);
+}
+.tb-seg-btn.active {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+.tb-cmd-btn {
+  min-height: 28px; height: 28px; padding: 0 7px; font-size: 0.72rem; font-weight: 600;
+  border-radius: 0; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--muted);
+}
+.tb-cmd-btn:hover { color: var(--text-strong); border-color: var(--border-strong); background: var(--surface-1); }
+
 .tb-icon-btn {
   min-height: 28px; height: 28px; width: 28px; padding: 0;
-  border-radius: 6px; border: 1px solid var(--border);
+  border-radius: 0; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--muted);
+}
+.tb-icon-btn.active {
+  color: var(--primary);
+  border-color: var(--primary);
 }
 .tb-icon-btn:hover:not(:disabled) { color: var(--text-strong); border-color: var(--border-strong); background: var(--surface-1); }
 .tb-icon-btn svg { width: 14px; height: 14px; }

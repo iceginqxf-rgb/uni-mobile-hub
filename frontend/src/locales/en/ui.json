@@ -46,6 +46,42 @@
     "tabOpen": "Tab open",
     "sleepingBanner": "Stream paused to save bandwidth while keeping reservation active."
   },
+  "fullscreen": {
+    "enter": "Fullscreen (Esc to exit)",
+    "exit": "Exit fullscreen (Esc)",
+    "toggle": "Toggle Device Fullscreen"
+  },
+  "split": {
+    "layoutLabel": "Workspace layout",
+    "single": "Single Tab Mode",
+    "sideBySide": "Side-by-Side Split",
+    "quadGrid": "Multi-Grid Split",
+    "masterBtn": "Master",
+    "slaveBtn": "Slave",
+    "setMasterHint": "Set as Sync Master for other split panes",
+    "toggleSlaveHint": "Join or leave Cross-OS Sync as Slave",
+    "masterActive": "Sync Master enabled",
+    "closePane": "Close split pane",
+    "needDevices": "Click '+' on devices in the sidebar to add 2+ devices to split view."
+  },
+  "inspector": {
+    "title": "Inspector",
+    "info": "Info",
+    "toggle": "Toggle Inspector Dock (⌘I / Ctrl+I)"
+  },
+  "palette": {
+    "title": "Command Palette",
+    "placeholder": "Search devices, layouts, controls, or themes…",
+    "empty": "No matching commands",
+    "navHint": "Navigate",
+    "runHint": "Execute",
+    "grpDevice": "Device",
+    "grpSplit": "Split View",
+    "grpControl": "Control",
+    "grpWorkspace": "Workspace",
+    "grpTheme": "Theme",
+    "addToSplit": "Add to Split"
+  },
   "devices": {
     "title": "Devices",
     "refresh": "Refresh",

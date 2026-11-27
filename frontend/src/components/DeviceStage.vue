@@ -1,10 +1,34 @@
 <template>
-  <article v-if="!compact" ref="cardEl" class="device-card" :class="{ live }" :style="{ '--card-aspect': aspect }">
+  <article
+    v-if="!compact"
+    ref="cardEl"
+    class="device-card"
+    :class="{ live, 'fill-pane': fillPane, 'is-fullscreen': isFullscreen }"
+    :style="fillPane || isFullscreen ? {} : { '--card-aspect': aspect }"
+  >
     <header class="device-card-head">
       <span class="device-card-title">{{ deviceName }}</span>
-      <span class="device-card-chip" :class="live ? 'on' : 'off'">
-        <span class="dot" />{{ chipText }}
-      </span>
+      <div class="row" style="gap: 6px">
+        <span class="device-card-chip" :class="live ? 'on' : 'off'">
+          <span class="dot" />{{ chipText }}
+        </span>
+        <button
+          type="button"
+          class="card-fs-btn"
+          :title="isFullscreen ? t('fullscreen.exit') : t('fullscreen.enter')"
+          :aria-label="isFullscreen ? t('fullscreen.exit') : t('fullscreen.enter')"
+          @click="toggleFullscreen"
+        >
+          <svg v-if="!isFullscreen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" />
+            <line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
+      </div>
     </header>
 
     <DeviceScreen
@@ -15,6 +39,7 @@
       :hevc="mode === 'hevc'"
       :rtc-control="activeRtcControl"
       :on-media="onMedia"
+      :fit-parent="fillPane || isFullscreen"
     />
 
     <footer class="device-card-actions">
@@ -109,7 +134,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import DeviceScreen from "./DeviceScreen.vue";
 import StreamPanel from "./StreamPanel.vue";
 import { useStream } from "../composables/useStream";
@@ -128,8 +153,51 @@ const props = defineProps({
   connected: { type: Boolean, default: false },
   compact: { type: Boolean, default: false }, // grid tile: screen only, no chrome
   moreOpen: { type: Boolean, default: false }, // highlight footer "更多" when drawer is open
+  fillPane: { type: Boolean, default: false }, // stretch inside split pane
 });
 const emit = defineEmits(["toggle-more"]);
+
+const isFullscreen = ref(false);
+async function toggleFullscreen() {
+  const el = cardEl.value;
+  if (!isFullscreen.value) {
+    isFullscreen.value = true;
+    try {
+      if (el && el.requestFullscreen && document.fullscreenElement !== el) {
+        await el.requestFullscreen();
+      }
+    } catch {
+      /* fixed overlay fallback remains active */
+    }
+  } else {
+    isFullscreen.value = false;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+    } catch {
+      /* ignore */
+    }
+  }
+}
+function onNativeFullscreenChange() {
+  if (!document.fullscreenElement && isFullscreen.value) {
+    // Only exit if user pressed browser Esc out of native fullscreen
+    isFullscreen.value = false;
+  }
+}
+function onFullscreenKey(ev) {
+  if (ev.key === "Escape" && isFullscreen.value) {
+    toggleFullscreen();
+  }
+}
+function onFullscreenCmd(ev) {
+  if (ev.detail?.udid === props.udid) toggleFullscreen();
+}
+onMounted(() => {
+  document.addEventListener("fullscreenchange", onNativeFullscreenChange);
+  window.addEventListener("keydown", onFullscreenKey);
+  window.addEventListener("umh:fullscreen", onFullscreenCmd);
+});
+defineExpose({ toggleFullscreen });
 
 const { devices, webrtcEnabled, hevcAvailable } = useDevices();
 
@@ -365,24 +433,68 @@ onUnmounted(() => {
   rtc.stop();
   rtc.dispose();
   unbindRepositionListeners();
+  document.removeEventListener("fullscreenchange", onNativeFullscreenChange);
+  window.removeEventListener("keydown", onFullscreenKey);
+  window.removeEventListener("umh:fullscreen", onFullscreenCmd);
+  if (document.fullscreenElement === cardEl.value) {
+    document.exitFullscreen?.().catch(() => {});
+  }
 });
 </script>
 
 <style scoped>
+.card-fs-btn {
+  min-height: 22px; height: 22px; width: 24px; padding: 0;
+  border-radius: 0; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--muted);
+}
+.card-fs-btn:hover { color: var(--text-strong); border-color: var(--primary); }
+.card-fs-btn svg { width: 12px; height: 12px; }
+
+.device-card.fill-pane {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.device-card.fill-pane :deep(.screen-wrap) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.device-card.is-fullscreen,
+.device-card:fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  margin: 0;
+  background: var(--bg);
+}
+.device-card.is-fullscreen :deep(.screen-wrap),
+.device-card:fullscreen :deep(.screen-wrap) {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #000;
+}
+
 /* Floating D-pad — fixed-positioned (coords set in JS), anchored beside the card
    so it never covers the screen. No center action: the hub is a visual anchor. */
 .dpad-pop {
-  position: fixed; z-index: 38;
+  position: fixed; z-index: 95;
   display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
   gap: 6px; width: 132px; aspect-ratio: 1; padding: 8px;
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  border-radius: 16px; box-shadow: var(--shadow); backdrop-filter: blur(10px);
+  border-radius: 0; box-shadow: var(--shadow);
 }
 .dpad-key { min-height: 0; height: 100%; padding: 0; display: flex; align-items: center; justify-content: center; }
 .dpad-key svg { width: 18px; height: 18px; }
 .dpad-close {
   grid-area: 1 / 3; align-self: start; justify-self: end;
-  min-height: 0; width: 22px; height: 22px; padding: 0; border-radius: 7px;
+  min-height: 0; width: 22px; height: 22px; padding: 0; border-radius: 0;
   display: flex; align-items: center; justify-content: center; color: var(--muted);
 }
 .dpad-close svg { width: 13px; height: 13px; }
@@ -391,7 +503,7 @@ onUnmounted(() => {
 .dpad-key.left { grid-area: 2 / 1; }
 .dpad-key.right { grid-area: 2 / 3; }
 .dpad-key.down { grid-area: 3 / 2; }
-.dpad-hub { grid-area: 2 / 2; align-self: center; justify-self: center; width: 12px; height: 12px; border-radius: 50%; background: var(--border-strong); }
+.dpad-hub { grid-area: 2 / 2; align-self: center; justify-self: center; width: 12px; height: 12px; border-radius: 0; background: var(--border-strong); }
 .dpad-pop-enter-active, .dpad-pop-leave-active { transition: opacity 0.16s ease, transform 0.16s ease; }
 .dpad-pop-enter-from, .dpad-pop-leave-to { opacity: 0; transform: scale(0.92); }
 </style>

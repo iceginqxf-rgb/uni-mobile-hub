@@ -141,7 +141,7 @@ async function loadSource() {
 .ghost-sm { min-height: 32px; padding: 4px 10px; font-size: 0.8rem; }
 .result {
   margin-top: 4px; max-height: 160px; overflow: auto;
-  background: var(--inset); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--inset); border: 1px solid var(--border); border-radius: 0;
   padding: 8px; font-size: 0.72rem; white-space: pre-wrap; word-break: break-word;
 }
 /* Formatted XML: keep indentation (no wrap collapse), horizontal scroll for long

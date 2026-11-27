@@ -75,6 +75,14 @@
               </span>
             </span>
             <span v-if="openSet.has(d.udid)" class="sb-tab-mark" :title="t('workbench.tabOpen')" />
+            <button
+              type="button"
+              class="sb-split-add"
+              :title="t('palette.addToSplit')"
+              @click.stop="$emit('add-split', d.udid)"
+            >
+              +
+            </button>
           </button>
         </div>
       </div>
@@ -102,7 +110,7 @@ const props = defineProps({
   width: { type: Number, default: 256 },
   loading: { type: Boolean, default: false },
 });
-const emit = defineEmits(["select", "refresh", "collapse", "resize"]);
+const emit = defineEmits(["select", "add-split", "refresh", "collapse", "resize"]);
 
 const { t } = useUiI18n();
 const { get: getReservation } = useReservations();
@@ -205,10 +213,10 @@ onUnmounted(onUp);
 }
 .sb-title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .sb-title { font-size: 0.78rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); }
-.sb-count { font-size: 0.72rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 999px; }
+.sb-count { font-size: 0.72rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 1px 6px; border-radius: 0; }
 .sb-icon-btn {
   min-height: 26px; height: 26px; width: 26px; padding: 0;
-  border-radius: 5px; border: 1px solid transparent; background: transparent; color: var(--muted);
+  border-radius: 0; border: 1px solid transparent; background: transparent; color: var(--muted);
 }
 .sb-icon-btn:hover:not(:disabled) { background: var(--surface-1); border-color: var(--border); color: var(--text-strong); }
 .sb-icon-btn svg { width: 14px; height: 14px; }
@@ -225,7 +233,7 @@ onUnmounted(onUp);
 .sb-filters { display: flex; gap: 4px; }
 .sb-flt {
   flex: 1; min-height: 24px; height: 24px; padding: 0 6px; font-size: 0.72rem; font-weight: 600;
-  border-radius: 5px; background: var(--inset); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 0; background: var(--inset); border: 1px solid var(--border); color: var(--muted);
 }
 .sb-flt.active {
   background: color-mix(in srgb, var(--primary) 16%, transparent);
@@ -238,7 +246,7 @@ onUnmounted(onUp);
 .sb-group { display: flex; flex-direction: column; gap: 2px; }
 .sb-group-head {
   width: 100%; min-height: 26px; height: 26px; padding: 0 6px; justify-content: flex-start; gap: 5px;
-  background: transparent; border: none; border-radius: 5px; color: var(--muted); font-size: 0.72rem; font-weight: 600;
+  background: transparent; border: none; border-radius: 0; color: var(--muted); font-size: 0.72rem; font-weight: 600;
 }
 .sb-group-head:hover { background: var(--surface-1); color: var(--text); }
 .sb-chev { width: 12px; height: 12px; transition: transform 0.14s ease; flex: none; }
@@ -249,19 +257,19 @@ onUnmounted(onUp);
 .sb-items { display: flex; flex-direction: column; gap: 2px; padding-left: 4px; }
 .sb-row {
   width: 100%; min-height: 40px; padding: 5px 8px; justify-content: flex-start; gap: 7px;
-  border: 1px solid transparent; border-radius: 6px; background: transparent; text-align: left;
+  border: 1px solid transparent; border-radius: 0; background: transparent; text-align: left;
 }
 .sb-row:hover { background: var(--surface-1); border-color: transparent; }
 .sb-row.active {
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   border-color: color-mix(in srgb, var(--primary) 40%, transparent);
 }
-.sb-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--muted); opacity: 0.55; }
+.sb-dot { width: 6px; height: 6px; border-radius: 0; flex: none; background: var(--muted); opacity: 0.55; }
 .sb-dot.on { background: var(--ok); opacity: 1; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 22%, transparent); }
 .sb-dot.warn { background: var(--warn); opacity: 1; }
 
 .sb-os {
-  font-size: 0.64rem; font-weight: 700; padding: 1px 4px; border-radius: 4px; flex: none;
+  font-size: 0.64rem; font-weight: 700; padding: 1px 4px; border-radius: 0; flex: none;
 }
 .sb-os.and { background: rgba(34, 197, 94, 0.14); color: var(--ok); }
 .sb-os.ios { background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary-2); }
@@ -272,4 +280,11 @@ onUnmounted(onUp);
 .sb-holder { color: var(--warn); }
 .sb-holder.mine { color: var(--ok); }
 .sb-tab-mark { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); flex: none; }
+.sb-split-add {
+  min-height: 20px; width: 20px; height: 20px; padding: 0; border-radius: 0;
+  border: 1px solid var(--border); background: var(--inset); color: var(--muted);
+  font-size: 0.78rem; opacity: 0; flex: none;
+}
+.sb-row:hover .sb-split-add, .sb-row:focus-within .sb-split-add { opacity: 1; }
+.sb-split-add:hover { border-color: var(--primary); color: var(--text-strong); background: var(--surface-2); }
 </style>

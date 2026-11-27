@@ -185,7 +185,7 @@ async function onSubmit() {
 .auth-screen::after {
   content: "";
   position: absolute;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--primary);
   filter: blur(110px);
   opacity: 0.12;
@@ -205,23 +205,23 @@ async function onSubmit() {
   width: min(400px, 100%);
   background: var(--panel-solid);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 0;
   box-shadow: var(--shadow);
   padding: 28px;
 }
 
 .auth-brand { text-align: center; margin-bottom: 20px; }
 .auth-brand-lockup { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
-.auth-logo { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 7px; }
+.auth-logo { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 0; }
 .auth-brand h1 { font-size: 1.15rem; margin: 0; color: var(--text-strong); }
 .auth-brand p { margin: 0; font-size: 0.8rem; color: var(--muted); }
 
 .auth-tabs {
   display: flex; gap: 4px; margin-bottom: 18px; padding: 3px;
-  background: var(--inset); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--inset); border: 1px solid var(--border); border-radius: 0;
 }
 .auth-tabs button {
-  flex: 1; padding: 6px 10px; min-height: 30px; border: none; border-radius: 6px;
+  flex: 1; padding: 6px 10px; min-height: 30px; border: none; border-radius: 0;
   background: transparent; color: var(--muted); cursor: pointer;
   font-weight: 600; font-size: 0.84rem; transition: background 0.14s ease, color 0.14s ease;
 }
@@ -235,25 +235,25 @@ async function onSubmit() {
 .auth-form { display: flex; flex-direction: column; gap: 12px; }
 .auth-form label { display: flex; flex-direction: column; gap: 5px; font-size: 0.78rem; color: var(--muted); }
 .auth-form input {
-  padding: 8px 10px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: 6px;
+  padding: 8px 10px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: 0;
   background: var(--inset); color: var(--text); font-size: 0.9rem;
 }
 .auth-form input:focus { outline: none; border-color: var(--primary); }
 
 .auth-submit {
-  margin-top: 4px; padding: 9px; min-height: 36px; border: none; border-radius: 6px;
+  margin-top: 4px; padding: 9px; min-height: 36px; border: none; border-radius: 0;
   background: var(--primary); color: var(--primary-fg); font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .auth-submit:disabled { opacity: 0.6; cursor: progress; }
 .auth-spinner {
   width: 15px; height: 15px; border: 2px solid currentColor; border-right-color: transparent;
-  border-radius: 50%; animation: auth-spin 0.6s linear infinite;
+  border-radius: 0; animation: auth-spin 0.6s linear infinite;
 }
 @keyframes auth-spin { to { transform: rotate(360deg); } }
 
 .auth-error {
-  margin: 0; padding: 8px 10px; border-radius: 8px;
+  margin: 0; padding: 8px 10px; border-radius: 0;
   background: rgba(248, 113, 113, 0.12); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.32);
   font-size: 0.82rem; text-align: center;
 }
@@ -271,7 +271,7 @@ async function onSubmit() {
 .auth-switch-link:focus { outline: none; }
 .auth-switch-link:focus-visible { outline: none; text-decoration: underline; }
 .auth-notice {
-  margin: 0; padding: 8px 10px; border-radius: 8px;
+  margin: 0; padding: 8px 10px; border-radius: 0;
   background: rgba(52, 211, 153, 0.12); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.32);
   font-size: 0.82rem;
 }

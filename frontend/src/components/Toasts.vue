@@ -17,7 +17,7 @@ const { toasts } = useToast();
   display: flex; flex-direction: column; gap: 6px; pointer-events: none;
 }
 .toast {
-  min-width: 150px; max-width: 340px; padding: 8px 12px; border-radius: 7px;
+  min-width: 150px; max-width: 340px; padding: 8px 12px; border-radius: 0;
   font-size: 0.8rem; color: var(--text-strong);
   background: var(--panel-solid); border: 1px solid var(--border-strong);
   box-shadow: var(--shadow); animation: toast-in .16s ease;

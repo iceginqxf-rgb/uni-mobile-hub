@@ -109,7 +109,7 @@ onUnmounted(() => clearInterval(timer));
 <style scoped>
 .resv {
   display: flex; flex-direction: column; gap: 8px;
-  padding: 8px; border-radius: 8px;
+  padding: 8px; border-radius: 0;
   border: 1px solid var(--border); background: var(--inset); font-size: 0.78rem;
 }
 .resv-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

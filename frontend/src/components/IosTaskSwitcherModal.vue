@@ -239,7 +239,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
   flex-direction: column;
   background: var(--panel-solid);
   border: 1px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -283,7 +283,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
   gap: 6px;
   min-height: 32px;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
@@ -343,7 +343,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
   gap: 12px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--panel);
 }
 .ts-row.foreground {

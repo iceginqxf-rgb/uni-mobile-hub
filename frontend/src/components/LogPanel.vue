@@ -283,7 +283,7 @@ onUnmounted(stopStream);
   font-size: 0.74rem;
   background: var(--inset);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
 }
 .loglist.nowrap .msg { white-space: pre; }
 .logline { padding: 3px 8px; border-bottom: 1px solid var(--border); }
@@ -292,7 +292,7 @@ onUnmounted(stopStream);
 .lvl-debug .msg { color: var(--muted); }
 .jump {
   position: absolute; right: 12px; bottom: 12px; width: 34px; height: 34px;
-  min-height: 0; padding: 0; border-radius: 999px;
+  min-height: 0; padding: 0; border-radius: 0;
   background: var(--primary); color: var(--primary-fg); border-color: transparent;
   box-shadow: var(--shadow); font-size: 1rem;
 }

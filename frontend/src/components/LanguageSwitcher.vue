@@ -23,7 +23,7 @@ const labels = computed(() => NATIVE);
 <style scoped>
 .lang {
   display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 4px 0 8px;
-  border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted);
+  border-radius: 0; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted);
 }
 .lang:hover { border-color: var(--border-strong); color: var(--text); }
 .lang:focus-within { border-color: var(--primary); }

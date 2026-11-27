@@ -286,7 +286,7 @@ onMounted(refresh);
 <style scoped>
 .tabs { display: flex; gap: 2px; margin-top: 10px; border-bottom: 1px solid var(--border); }
 .tab {
-  min-height: 36px; flex: 0 0 auto; background: transparent; border: none; border-radius: 8px 8px 0 0;
+  min-height: 36px; flex: 0 0 auto; background: transparent; border: none; border-radius: 0;
   color: var(--muted); padding: 6px 14px; font-weight: 500; box-shadow: inset 0 -2px 0 transparent;
 }
 .tab:hover:not(.active) { color: var(--text); background: transparent; }
@@ -301,6 +301,6 @@ onMounted(refresh);
 .block { margin-top: 12px; }
 .create-box {
   margin-top: 12px; padding: 12px; border: 1px solid var(--border);
-  border-radius: 10px; background: var(--surface-2);
+  border-radius: 0; background: var(--surface-2);
 }
 </style>

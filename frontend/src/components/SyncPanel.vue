@@ -92,19 +92,18 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { syncApi } from "../api/sync";
 import { useDevices } from "../composables/useDevices";
+import { useSync } from "../composables/useSync";
 import { useToast } from "../composables/useToast";
 import { useUiI18n } from "../composables/useUiI18n";
 
 const { devices } = useDevices();
+const { groups, saving, refresh: refreshSync, setGroup, clearGroup, clearAll } = useSync();
 const { push: pushToast } = useToast();
 const { t } = useUiI18n();
 
-const groups = ref({});
 const master = ref("");
 const selectedSlaves = ref([]);
-const saving = ref(false);
 
 const hasGroups = computed(() => Object.keys(groups.value).length > 0);
 const slaveCandidates = computed(() => devices.value.filter((d) => d.udid !== master.value));
@@ -125,57 +124,48 @@ function selectAllSlaves() {
 }
 
 async function refresh() {
-  try {
-    const res = await syncApi.status();
-    groups.value = res?.groups || {};
-    if (!master.value && devices.value.length) {
-      const existingMaster = Object.keys(groups.value)[0];
-      selectMaster(existingMaster || devices.value[0].udid);
-    }
-  } catch {
-    /* ignore */
+  await refreshSync();
+  if (!master.value && devices.value.length) {
+    const existingMaster = Object.keys(groups.value)[0];
+    selectMaster(existingMaster || devices.value[0].udid);
+  } else if (master.value) {
+    selectedSlaves.value = (groups.value[master.value] || []).filter((s) => s !== master.value);
   }
 }
 
+watch(groups, (g) => {
+  if (master.value) {
+    selectedSlaves.value = (g[master.value] || []).filter((s) => s !== master.value);
+  }
+});
+
 async function onSave() {
   if (!canSave.value) return;
-  saving.value = true;
   try {
-    const res = await syncApi.setGroup(master.value, selectedSlaves.value);
-    groups.value = res?.groups || {};
+    await setGroup(master.value, selectedSlaves.value);
     pushToast(t("sync.saved"), "ok");
   } catch (e) {
     pushToast(e?.message || t("errors.generic"), "err");
-  } finally {
-    saving.value = false;
   }
 }
 
 async function onRemoveGroup(m) {
-  saving.value = true;
   try {
-    const res = await syncApi.clearGroup(m);
-    groups.value = res?.groups || {};
+    await clearGroup(m);
     if (m === master.value) selectedSlaves.value = [];
     pushToast(t("sync.cleared"), "ok");
   } catch (e) {
     pushToast(e?.message || t("errors.generic"), "err");
-  } finally {
-    saving.value = false;
   }
 }
 
 async function onClearAll() {
-  saving.value = true;
   try {
-    const res = await syncApi.clearAll();
-    groups.value = res?.groups || {};
+    await clearAll();
     selectedSlaves.value = [];
     pushToast(t("sync.cleared"), "ok");
   } catch (e) {
     pushToast(e?.message || t("errors.generic"), "err");
-  } finally {
-    saving.value = false;
   }
 }
 
@@ -196,18 +186,18 @@ onMounted(refresh);
 .sync-list { display: flex; flex-direction: column; gap: 6px; }
 .sync-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: 8px;
+  padding: 8px 10px; border-radius: 0;
   border: 1px solid var(--border); background: var(--surface);
   color: inherit; text-align: left; cursor: pointer;
 }
 .sync-item.active { border-color: var(--accent); background: rgba(79, 124, 255, 0.12); }
 .sync-name { flex: 1; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.os-badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 999px; font-weight: 700; }
+.os-badge { font-size: 0.68rem; padding: 1px 6px; border-radius: 0; font-weight: 700; }
 .os-badge.android { background: rgba(52, 199, 89, 0.16); color: #34c759; }
 .os-badge.ios { background: rgba(79, 124, 255, 0.16); color: #6ea2ff; }
 .sync-groups { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .sync-group-row {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  padding: 8px 10px; border-radius: 0; border: 1px solid var(--border);
 }
 </style>

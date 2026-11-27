@@ -46,6 +46,42 @@
     "tabOpen": "标签已打开",
     "sleepingBanner": "当前设备画面已休眠以节省带宽，连接与占用仍保留。"
   },
+  "fullscreen": {
+    "enter": "全屏控制 (Esc 退出)",
+    "exit": "退出全屏 (Esc)",
+    "toggle": "切换设备全屏"
+  },
+  "split": {
+    "layoutLabel": "工作区布局",
+    "single": "单屏标签模式",
+    "sideBySide": "左右双屏对照",
+    "quadGrid": "四宫格分屏",
+    "masterBtn": "主控",
+    "slaveBtn": "从机",
+    "setMasterHint": "设为主控并同步其他分屏设备",
+    "toggleSlaveHint": "加入/退出跨系统群控从机",
+    "masterActive": "已设为群控主控",
+    "closePane": "关闭此分屏窗格",
+    "needDevices": "请从左侧设备树点击「+」添加至少两台设备进行分屏。"
+  },
+  "inspector": {
+    "title": "设备检视器",
+    "info": "详情",
+    "toggle": "展开/收起工具栏 (⌘I / Ctrl+I)"
+  },
+  "palette": {
+    "title": "全局命令面板",
+    "placeholder": "搜索设备、切换布局、控制操作或主题…",
+    "empty": "未找到匹配的命令或设备",
+    "navHint": "选择",
+    "runHint": "执行",
+    "grpDevice": "打开设备",
+    "grpSplit": "加入分屏",
+    "grpControl": "当前设备",
+    "grpWorkspace": "工作区",
+    "grpTheme": "主题切换",
+    "addToSplit": "加入分屏"
+  },
   "devices": {
     "title": "设备",
     "refresh": "刷新",

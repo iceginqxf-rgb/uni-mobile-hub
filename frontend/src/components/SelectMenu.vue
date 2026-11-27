@@ -109,7 +109,7 @@ onUnmounted(unbind);
 .sel-btn {
   width: 100%; min-height: 40px; padding: 6px 10px 6px 12px; gap: 8px;
   display: inline-flex; align-items: center; justify-content: space-between;
-  border: 1px solid var(--border-strong); border-radius: 9px;
+  border: 1px solid var(--border-strong); border-radius: 0;
   background: var(--inset); color: var(--text); font: inherit; cursor: pointer;
 }
 .sel-btn:hover:not(:disabled) { border-color: var(--primary-2); }
@@ -125,12 +125,12 @@ onUnmounted(unbind);
 .sel-menu {
   z-index: 1100; overflow-y: auto; padding: 5px;
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  border-radius: 10px; box-shadow: var(--shadow); backdrop-filter: blur(8px);
+  border-radius: 0; box-shadow: var(--shadow); backdrop-filter: blur(8px);
 }
 .sel-opt {
   width: 100%; min-height: 0; display: flex; align-items: center; gap: 8px;
   padding: 7px 9px; border: none; background: transparent; color: var(--text);
-  border-radius: 7px; font: inherit; text-align: left; cursor: pointer;
+  border-radius: 0; font: inherit; text-align: left; cursor: pointer;
 }
 .sel-opt:hover { background: var(--surface-2); }
 .sel-opt.active { background: rgba(59, 130, 246, 0.16); color: var(--text-strong); }
