@@ -13,7 +13,7 @@
 - **双原生投屏引擎**：Android 保留原生 Scrcpy H.264/WebRTC 极速链路，iOS 保留 WDA MJPEG / WebRTC / HEVC 链路，不为了统一而牺牲帧率。
 - **AI Agent 友好**：面向纯视觉 Agent 提供统一设备列表、截图与归一化坐标（`0.0~1.0`）触控接口。
 
-详细技术方案与模块划分见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，AI Agent API 手册见 [docs/AGENT_API.md](docs/AGENT_API.md)（上游原版 iOS 说明归档于 [docs/README_ios_upstream.md](docs/README_ios_upstream.md)）。
+详细技术方案与模块划分见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，AI Agent API 手册见 [docs/AGENT_API.md](docs/AGENT_API.md)，部署与迁移指南见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)（上游原版 iOS 说明归档于 [docs/README_ios_upstream.md](docs/README_ios_upstream.md)）。
 
 ---
 
@@ -24,6 +24,8 @@
 - [x] **Phase 2**：前端 `DeviceScreen.vue` 双引擎播放器自动切换（Scrcpy WebRTC / iOS Stream）
 - [x] **Phase 3**：面板差异化适配（`.apk`/`.ipa`、导航键、`logcat`/`syslog`）
 - [x] **Phase 4**：跨平台群控同步（Sync）与统一 AI Agent HTTP API（`Bearer Token` + `/api/v1/agent/*`）
+- [x] **Phase 5**：Scrcpy 同源 WebRTC 信令中继、跨端输入/旋转适配、`/api/nodes` 可观测性与 CI/Docker/常驻工程化
+- [ ] **Phase 6**：参考 `Termix-SSH/Termix` 的 UI/UX 2.0 工作台重构（多主题、设备树侧栏、多标签分屏与命令面板）
 
 ---
 

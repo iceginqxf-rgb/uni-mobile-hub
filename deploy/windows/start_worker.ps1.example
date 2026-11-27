@@ -1,0 +1,12 @@
+# Start a uni-mobile-hub Android Worker on Windows
+$ErrorActionPreference = "Stop"
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+Set-Location $RepoRoot
+
+$env:OPEN_BROWSER = "0"
+$env:IOS_ENABLED = "0"
+$env:ANDROID_ENABLED = "1"
+if (-not $env:PORT) { $env:PORT = "8002" }
+
+& "$RepoRoot\.venv\Scripts\python.exe" "$RepoRoot\scripts\init_db.py" init
+& "$RepoRoot\.venv\Scripts\python.exe" "$RepoRoot\app.py"

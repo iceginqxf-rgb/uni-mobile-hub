@@ -1,0 +1,14 @@
+services:
+  uni-mobile-hub:
+    build: .
+    container_name: uni-mobile-hub
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ~/.android:/root/.android:ro
+      - /dev/bus/usb:/dev/bus/usb
+    privileged: true

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.unimobilehub.server</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/ABS/PATH/TO/.venv/bin/python</string>
+    <string>/ABS/PATH/TO/uni-mobile-hub/app.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/ABS/PATH/TO/uni-mobile-hub</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OPEN_BROWSER</key>
+    <string>0</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/ABS/PATH/TO/uni-mobile-hub/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/ABS/PATH/TO/uni-mobile-hub/logs/launchd.err.log</string>
+</dict>
+</plist>
