@@ -552,6 +552,15 @@ class RemoteNodeAdapter:
         dev = state.get_device(udid)
         return bool(dev and dev.connected)
 
+    def get_rtc_config(self, udid: str) -> dict:
+        if self.node.type == "scrcpy":
+            try:
+                res = self.client.request("GET", "/api/rtc-config")
+                return res if isinstance(res, dict) else {}
+            except AppError:
+                return {}
+        return {}
+
     def controller(self, udid: str) -> RemoteNodeController:
         dev = state.get_device(udid)
         if not dev:

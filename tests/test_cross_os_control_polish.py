@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import base64
+import threading
+import time
 import unittest
 from unittest.mock import MagicMock, patch
 
 from android.adb_client import AdbClient
+from ios.ios_adapter import IOSAdapter
 from services.device_models import MobileDevice
 from services.ios_control_service import ios_control_service
 from services.runtime_state import state
@@ -75,3 +78,23 @@ class TestCrossOSControlPolish(unittest.TestCase):
             self.assertEqual((dev.screen_width, dev.screen_height), (2400, 1080))
             self.assertEqual(dev.orientation, "LANDSCAPE")
             emit_mock.assert_called_with("devices:changed", {"reason": "rotated", "udid": udid})
+
+    def test_ios_adapter_connect_serializes_per_udid(self):
+        adapter = IOSAdapter({})
+        active = {"n": 0, "max": 0}
+
+        def fake_connect(udid: str):
+            active["n"] += 1
+            active["max"] = max(active["max"], active["n"])
+            time.sleep(0.05)
+            active["n"] -= 1
+            return udid
+
+        adapter._connect_unlocked = fake_connect  # type: ignore[method-assign]
+        t1 = threading.Thread(target=adapter.connect, args=("IOS-SERIAL-1",))
+        t2 = threading.Thread(target=adapter.connect, args=("IOS-SERIAL-1",))
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+        self.assertEqual(active["max"], 1)

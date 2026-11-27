@@ -9,6 +9,7 @@ flowing between the browser PeerConnection and the Worker.
 from __future__ import annotations
 
 import threading
+import time
 from contextlib import suppress
 from typing import Any, Callable, Dict, Optional, Tuple
 
@@ -79,6 +80,7 @@ class ScrcpyWebRTCRelay:
 
         self.close(sid, udid)
         key = (sid, udid)
+        retried_unavailable = False
 
         @sio.on("webrtc:answer")
         def _on_answer(data: Any) -> None:
@@ -107,11 +109,24 @@ class ScrcpyWebRTCRelay:
 
         @sio.on("webrtc:closed")
         def _on_closed(data: Any) -> None:
+            nonlocal retried_unavailable
             d = data or {}
             if d.get("device_id") and d.get("device_id") != remote_id:
                 return
+            reason = str(d.get("reason") or "closed")
+            if reason == "device_unavailable" and not retried_unavailable:
+                retried_unavailable = True
+                with suppress(AppError):
+                    adapter.client.request("POST", "/api/start", json={"device_id": remote_id})
+                time.sleep(0.6)
+                with self._lock:
+                    live = self._sessions.get(key)
+                if live and live.get("sio") is sio:
+                    with suppress(Exception):
+                        sio.emit("webrtc:offer", {"device_id": remote_id, "sdp": sdp})
+                        return
             self._drop_entry(key)
-            emit_fn("scrcpy:webrtc:closed", {"udid": udid, "reason": d.get("reason", "closed")})
+            emit_fn("scrcpy:webrtc:closed", {"udid": udid, "reason": reason})
 
         try:
             sio.connect(adapter.node.url, transports=["polling"], headers=headers, wait_timeout=6)

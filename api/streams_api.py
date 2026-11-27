@@ -49,3 +49,14 @@ def quality(udid: str):
     restores 100). Best-effort — needs WDA up."""
     body = request.get_json(silent=True) or {}
     return get_adapter().set_mjpeg_scaling(udid, int(body.get("scaling", 100)))
+
+
+@bp.get("/<udid>/rtc-config")
+@api
+def rtc_config(udid: str):
+    """Proxy upstream TURN/ICE WebRTC config for remote Scrcpy worker devices."""
+    adapter = get_adapter(udid)
+    getter = getattr(adapter, "get_rtc_config", None)
+    if callable(getter):
+        return getter(udid)
+    return {}

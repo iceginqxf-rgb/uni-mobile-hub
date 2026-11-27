@@ -69,12 +69,14 @@ import ReservationCard from "./ReservationCard.vue";
 import { useDevices } from "../composables/useDevices";
 import { useReservations } from "../composables/useReservations";
 import { useUiI18n } from "../composables/useUiI18n";
+import { useToast } from "../composables/useToast";
 import { devicesApi } from "../api/devices";
 
 const props = defineProps({ devices: { type: Array, default: () => [] } });
 defineEmits(["open"]);
 
 const { t } = useUiI18n();
+const { push: pushToast } = useToast();
 const { connect } = useDevices();
 const { canControl, fetchReservations } = useReservations();
 const busy = reactive({});
@@ -115,7 +117,7 @@ async function connectOne(udid) {
     const dev = await connect(udid);
     setScaling(dev || props.devices.find((x) => x.udid === udid), GRID_SCALING);
   } catch (e) {
-    /* surfaced via device state / toast elsewhere */
+    pushToast(e?.message || t("detail.connectFailed"), "err");
   } finally {
     busy[udid] = false;
   }

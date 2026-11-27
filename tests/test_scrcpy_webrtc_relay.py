@@ -6,7 +6,9 @@ import unittest
 from unittest.mock import patch
 
 import httpx
+from flask import Flask
 
+from api.streams_api import bp as streams_bp
 from nodes.node_config import RemoteNodeConfig
 from nodes.remote_node_adapter import RemoteNodeAdapter
 from nodes.scrcpy_webrtc_relay import ScrcpyWebRTCRelay
@@ -49,6 +51,11 @@ class TestScrcpyWebRTCRelay(unittest.TestCase):
                 return httpx.Response(200, json={"devices": ["DEV1"], "names": {"DEV1": "Phone1"}, "geometry": {}})
             if request.url.path in ("/api/reservations", "/api/start"):
                 return httpx.Response(200, json={"status": "ok"})
+            if request.url.path == "/api/rtc-config":
+                return httpx.Response(
+                    200,
+                    json={"iceTransportPolicy": "relay", "iceServers": [{"urls": "turn:10.0.0.1:8012?transport=tcp"}]},
+                )
             return httpx.Response(404)
 
         cfg = RemoteNodeConfig(id="rog", url="http://127.0.0.1:18002", type="scrcpy", username="u", password="p")
@@ -105,3 +112,38 @@ class TestScrcpyWebRTCRelay(unittest.TestCase):
         relay.close_sid("sid-1")
         self.assertIn(("webrtc:close", {"device_id": "DEV1"}), c.emitted)
         self.assertTrue(c.disconnected)
+
+    def test_rtc_config_proxy_and_unavailable_retry(self):
+        app = Flask(__name__)
+        app.register_blueprint(streams_bp)
+        with patch("api.streams_api.get_adapter", return_value=self.adapter):
+            with app.test_client() as client:
+                r = client.get(f"/api/devices/{self.udid}/rtc-config")
+                self.assertEqual(r.status_code, 200)
+                data = r.get_json()["data"]
+                self.assertEqual(data["iceTransportPolicy"], "relay")
+                self.assertEqual(data["iceServers"][0]["urls"], "turn:10.0.0.1:8012?transport=tcp")
+
+        relay = ScrcpyWebRTCRelay()
+        clients = []
+        emitted = []
+
+        def factory(sess):
+            c = _FakeSioClient(sess)
+            clients.append(c)
+            return c
+
+        with (
+            patch("nodes.scrcpy_webrtc_relay.get_adapter", return_value=self.adapter),
+            patch("nodes.scrcpy_webrtc_relay.time.sleep", return_value=None),
+        ):
+            relay.start_offer("sid-2", self.udid, "offer-1", lambda e, p: emitted.append((e, p)), client_factory=factory)
+            c = clients[0]
+            # First device_unavailable triggers one automatic re-offer instead of closing browser
+            c.handlers["webrtc:closed"]({"device_id": "DEV1", "reason": "device_unavailable"})
+            offer_count = sum(1 for ev, _ in c.emitted if ev == "webrtc:offer")
+            self.assertEqual(offer_count, 2)
+            self.assertEqual(emitted, [])
+            # Second close forwards to browser cleanly
+            c.handlers["webrtc:closed"]({"device_id": "DEV1", "reason": "device_unavailable"})
+            self.assertEqual(emitted[0], ("scrcpy:webrtc:closed", {"udid": self.udid, "reason": "device_unavailable"}))

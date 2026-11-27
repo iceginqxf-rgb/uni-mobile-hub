@@ -78,6 +78,15 @@ class IOSAdapter:
         # ScreenProviders as its video source.
         self.webrtc = WebRTCBridge(config)
         self._lock = threading.RLock()
+        self._connect_locks: dict[str, threading.Lock] = {}
+
+    def _connect_lock(self, udid: str) -> threading.Lock:
+        with self._lock:
+            lock = self._connect_locks.get(udid)
+            if lock is None:
+                lock = threading.Lock()
+                self._connect_locks[udid] = lock
+            return lock
 
     # ── discovery ────────────────────────────────────────────────────
     def is_backend_available(self) -> bool:
@@ -111,6 +120,10 @@ class IOSAdapter:
 
     # ── connection / WDA ─────────────────────────────────────────────
     def connect(self, udid: str) -> IOSDevice:
+        with self._connect_lock(udid):
+            return self._connect_unlocked(udid)
+
+    def _connect_unlocked(self, udid: str) -> IOSDevice:
         device = state.get_device(udid)
         if not device:
             # Try a fresh scan before giving up.

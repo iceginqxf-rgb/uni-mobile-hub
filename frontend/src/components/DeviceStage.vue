@@ -298,7 +298,7 @@ async function pickTransport() {
   if (!props.connected || mode.value) return;
   if (isAndroid.value) {
     const ep = streamEndpoint.value;
-    if (ep?.mode === "remote_scrcpy" && ep?.direct && ep?.base_url) {
+    if (ep?.mode === "remote_scrcpy") {
       mode.value = "scrcpy-rtc";
       scrcpyRtc.start(
         ep,

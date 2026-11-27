@@ -6,6 +6,8 @@ export const devicesApi = {
   info: (udid) => http.get(`/api/devices/${encodeURIComponent(udid)}/info`),
   streamQuality: (udid, scaling) =>
     http.post(`/api/devices/${encodeURIComponent(udid)}/stream/quality`, { scaling }),
+  rtcConfig: (udid) =>
+    http.get(`/api/devices/${encodeURIComponent(udid)}/rtc-config`),
   connect: (udid) => http.post(`/api/devices/${encodeURIComponent(udid)}/connect`),
   disconnect: (udid) =>
     http.post(`/api/devices/${encodeURIComponent(udid)}/disconnect`),

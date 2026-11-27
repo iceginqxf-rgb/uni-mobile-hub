@@ -64,7 +64,7 @@
 
       <!-- RIGHT control panel — hidden by default, docks as a third column when
            "更多" is pressed (no overlay/page-shift; the device just recenters). -->
-      <aside v-show="showPanels" class="panel-drawer" role="region">
+      <aside v-if="showPanels" class="panel-drawer" role="region">
         <div class="panel-drawer-head">
         <div class="tabs" role="tablist">
           <button

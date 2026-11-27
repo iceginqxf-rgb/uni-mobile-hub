@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { useSocket } from "./useSocket";
+import { devicesApi } from "../api/devices";
 
 // Same-origin Hub WebRTC signaling relay for remote Scrcpy worker nodes.
 // Media flows via WebRTC + "input" DataChannel while all Socket.IO signaling
@@ -107,7 +108,19 @@ export function useScrcpyStream(udid) {
     fallbackCb = onFallback || null;
 
     const myId = negId;
-    const myPc = new RTCPeerConnection({ iceServers: [] });
+    let rtcOpts = { iceServers: [] };
+    try {
+      const cfg = await devicesApi.rtcConfig(udid);
+      if (myId !== negId) return;
+      if (cfg && Array.isArray(cfg.iceServers)) {
+        rtcOpts = {
+          iceServers: cfg.iceServers,
+          ...(cfg.iceTransportPolicy ? { iceTransportPolicy: cfg.iceTransportPolicy } : {}),
+        };
+      }
+    } catch { /* fall back to host ICE */ }
+
+    const myPc = new RTCPeerConnection(rtcOpts);
     pc = myPc;
     inputChannel = myPc.createDataChannel("input");
     myPc.addTransceiver("video", { direction: "recvonly" });
@@ -116,7 +129,7 @@ export function useScrcpyStream(udid) {
       if (!running.value) {
         _triggerFallback("scrcpy webrtc timeout", myId);
       }
-    }, 6000);
+    }, 10000);
 
     myPc.ontrack = (ev) => {
       if (pc !== myPc) return;

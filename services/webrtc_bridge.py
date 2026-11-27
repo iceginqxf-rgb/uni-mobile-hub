@@ -462,8 +462,9 @@ class WebRTCBridge:
             answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)  # blocks until ICE gathering done
         except InvalidStateError:
-            # The PC was closed mid-setup by a newer offer's _close_peer — bail.
-            if superseded():
+            # The PC was closed mid-setup by a newer offer or client disconnect — bail quietly.
+            cur = self._peers.get(key)
+            if superseded() or pc.connectionState == "closed" or not cur or cur[0] is not pc:
                 return None
             raise
         # Last-moment supersede check: only emit if we're still the live PC.
