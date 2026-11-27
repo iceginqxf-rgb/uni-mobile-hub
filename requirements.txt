@@ -5,7 +5,7 @@ aiortc==1.14.0
 aiosignal==1.4.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
-ansicon==1.89.0
+ansicon==1.89.0; sys_platform == "win32"
 anyio==4.13.0
 apple-compress==0.2.3
 arrow==1.4.0
@@ -32,7 +32,6 @@ daemonize==2.5.0
 decorator==5.3.1
 developer-disk-image==0.3.0
 defusedxml==0.7.1
-developer_disk_image==0.2.0
 dnspython==2.8.0
 editor==1.8.0
 enum-compat==0.0.3
@@ -98,7 +97,7 @@ pylibsrtp==1.0.0
 pylzss==0.3.4
 pymobiledevice3==11.17.0
 pyOpenSSL==26.2.0
-pyreadline3==3.5.6
+pyreadline3==3.5.6; sys_platform == "win32"
 pytest==9.0.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2

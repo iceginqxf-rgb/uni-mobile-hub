@@ -24,7 +24,7 @@ flowchart LR
 
 ---
 
-## 二、四阶段合并规划
+## 二、六阶段演进架构（Phase 1–6）
 
 ### Phase 1：Backend Adapter Registry & 跨机节点聚合
 - 在 `services/` 下抽象统一的 `DeviceAdapter` 接口（`discover` / `connect` / `disconnect` / `control` / `stream_info` / `screenshot` / `apps` / `files` / `logs`）。
@@ -47,4 +47,12 @@ flowchart LR
 
 ### Phase 4：跨系统群控同步与 AI Agent 原生接口
 - 移植 `WebAppFlaskscrcpy` 的群控同步（Sync），支持主控设备的点击/滑动按比例坐标（`0.0~1.0`）跨屏分发到选中设备（兼容 Android + iPhone 混控）。
-- 提供标准化 Agent HTTP API（`/api/agent/devices`、`/api/agent/devices/:id/screenshot`、`/api/agent/devices/:id/tap` 等），配合纯视觉自动化工作流直接驱动任意平台真机。
+- 提供标准化 Agent HTTP API（`/api/v1/agent/devices`、`/api/v1/agent/devices/:id/screenshot`、`/api/v1/agent/devices/:id/tap` 等），配合纯视觉自动化工作流直接驱动任意平台真机。
+
+### Phase 5：同源信令中继、跨端输入适配与节点可观测性
+- 新增 Scrcpy 同源 WebRTC 信令与 TURN `rtc-config` 中继（`nodes/scrcpy_webrtc_relay.py`、`socketio_handlers/webrtc_events.py`），跨 Tailscale/NAT 环境无需暴露 Worker 端口即可低延迟拉流。
+- 统一双端指针/滚轮/缩放手势与方向坐标映射，补全 `GET /api/nodes`、`POST /api/nodes/<node_id>/reconnect` 可观测性接口，以及 CI、Docker Compose、macOS `launchd`、Windows Worker 部署模板。
+
+### Phase 6：Termix 2.0 工作台与 iOS DVT 深化
+- 前端重构为 `NavRail` + 可调整设备树侧栏 + 支持流休眠/唤醒的浏览器式多标签 + `1×2`/`2×2` 分屏工作区（带内联主从同步）+ 可折叠 `InspectorDock`（文件/应用/日志）+ 全局 `CommandPalette`（`Cmd/Ctrl+K` / 双击左 `Shift`），支持 5 套预设主题与 0px 直角几何、单机真全屏。
+- 后端新增 `ios/dvt_metrics.py` 通过 in-process `pymobiledevice3` DVT `Sysmontap` 与 `DeviceInfo.proclist()` 提供 iOS 实时内存 telemetry 及 `/api/devices/<udid>/running-apps` 多任务切换弹窗，同时消除 STUN 超时与 DDI 重复挂载阻塞。
