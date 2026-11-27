@@ -49,6 +49,7 @@
 <script setup>
 import { ref, watch, nextTick } from "vue";
 import { useControl } from "../composables/useControl";
+import { recordAction } from "../composables/useMacroRecorder";
 import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
@@ -170,10 +171,36 @@ function onMove(ev) {
   });
 }
 
+function _recordGesture(startPt, endPt, dtMs) {
+  if (!endPt.w || !endPt.h) return;
+  const dist = Math.hypot(endPt.x - startPt.x, endPt.y - startPt.y);
+  const nx1 = startPt.x / endPt.w;
+  const ny1 = startPt.y / endPt.h;
+  const nx2 = endPt.x / endPt.w;
+  const ny2 = endPt.y / endPt.h;
+  if (dist <= TAP_MAX_DIST && dtMs <= TAP_MAX_MS) {
+    recordAction(props.udid, { type: "tap", nx: nx2, ny: ny2 });
+  } else if (dist <= TAP_MAX_DIST && dtMs >= LONG_PRESS_MS) {
+    recordAction(props.udid, { type: "longpress", nx: nx2, ny: ny2, duration: Math.min(3.0, dtMs / 1000) });
+  } else {
+    recordAction(props.udid, {
+      type: "swipe",
+      nx1,
+      ny1,
+      nx2,
+      ny2,
+      duration: Math.min(1.0, Math.max(0.1, dtMs / 1000)),
+    });
+  }
+}
+
 function onUp(ev) {
   if (!start || !mediaRef.value) return;
   const p = point(ev);
   showRipple(p.x, p.y, false, 220);
+
+  const dist = Math.hypot(p.x - start.x, p.y - start.y);
+  const dt = performance.now() - start.t;
 
   if (liveTouch && props.rtcControl) {
     props.rtcControl({
@@ -186,14 +213,12 @@ function onUp(ev) {
       video_width: p.vw,
       video_height: p.vh,
     });
+    _recordGesture(start, p, dt);
     liveTouch = false;
     usedLiveTouchAt = performance.now();
     start = null;
     return;
   }
-
-  const dist = Math.hypot(p.x - start.x, p.y - start.y);
-  const dt = performance.now() - start.t;
 
   // iPhone Home-bar bottom-edge swipe up: quick flick -> Home screen;
   // slow drag & hold -> iOS App Switcher (`recent`).
@@ -214,10 +239,12 @@ function onUp(ev) {
   if (dist <= TAP_MAX_DIST && dt <= TAP_MAX_MS) {
     const msg = { type: "tap", x: Math.round(p.x), y: Math.round(p.y), display_width: p.w, display_height: p.h, video_width: p.vw, video_height: p.vh };
     if (!(props.rtcControl && props.rtcControl(msg))) tap(msg.x, msg.y, p.w, p.h);
+    _recordGesture(start, p, dt);
   } else if (dist <= TAP_MAX_DIST && dt >= LONG_PRESS_MS) {
     const dur = Math.min(3.0, dt / 1000);
     const msg = { type: "longpress", x: Math.round(p.x), y: Math.round(p.y), display_width: p.w, display_height: p.h, video_width: p.vw, video_height: p.vh, duration: dur };
     if (!(props.rtcControl && props.rtcControl(msg))) longPress(msg.x, msg.y, p.w, p.h, dur);
+    _recordGesture(start, p, dt);
   } else {
     const dur = Math.min(1.0, Math.max(0.1, dt / 1000));
     const msg = {
@@ -234,6 +261,7 @@ function onUp(ev) {
     };
     if (!(props.rtcControl && props.rtcControl(msg)))
       swipe(msg.x1, msg.y1, msg.x2, msg.y2, p.w, p.h, dur);
+    _recordGesture(start, p, dt);
   }
   start = null;
 }
@@ -280,6 +308,9 @@ function onDblClick(ev) {
   const p = point(ev);
   const msg = { type: "doubletap", x: Math.round(p.x), y: Math.round(p.y), display_width: p.w, display_height: p.h, video_width: p.vw, video_height: p.vh };
   if (!(props.rtcControl && props.rtcControl(msg))) doubleTap(msg.x, msg.y, p.w, p.h);
+  if (p.w && p.h) {
+    recordAction(props.udid, { type: "doubletap", nx: p.x / p.w, ny: p.y / p.h });
+  }
 }
 </script>
 

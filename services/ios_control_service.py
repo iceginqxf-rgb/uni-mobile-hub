@@ -64,18 +64,18 @@ class IOSControlService:
         except Exception:
             return 0.5, 0.5
 
-    def tap(self, udid: str, body: dict) -> dict:
+    def tap(self, udid: str, body: dict, *, skip_sync: bool = False) -> dict:
         if body.get("nx") is None or body.get("ny") is None:
             require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         controller.tap(x, y)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             nx, ny = self._normalized_xy(udid, controller, x, y)
             sync_service.fanout(udid, "tap", {"nx": nx, "ny": ny})
         return {"x": x, "y": y}
 
-    def swipe(self, udid: str, body: dict) -> dict:
+    def swipe(self, udid: str, body: dict, *, skip_sync: bool = False) -> dict:
         if any(body.get(k) is None for k in ("nx1", "ny1", "nx2", "ny2")):
             require(body, "x1", "y1", "x2", "y2")
         controller = get_adapter().controller(udid)
@@ -90,7 +90,7 @@ class IOSControlService:
                 controller.swipe(x1, y1, x2, y2, duration)
         else:
             controller.swipe(x1, y1, x2, y2, duration)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             nx1, ny1 = self._normalized_xy(udid, controller, x1, y1)
             nx2, ny2 = self._normalized_xy(udid, controller, x2, y2)
             sync_service.fanout(udid, "swipe", {
@@ -98,25 +98,25 @@ class IOSControlService:
             })
         return {"x1": x1, "y1": y1, "x2": x2, "y2": y2, "duration": duration}
 
-    def double_tap(self, udid: str, body: dict) -> dict:
+    def double_tap(self, udid: str, body: dict, *, skip_sync: bool = False) -> dict:
         if body.get("nx") is None or body.get("ny") is None:
             require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         controller.double_tap(x, y)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             nx, ny = self._normalized_xy(udid, controller, x, y)
             sync_service.fanout(udid, "double_tap", {"nx": nx, "ny": ny})
         return {"x": x, "y": y}
 
-    def long_press(self, udid: str, body: dict) -> dict:
+    def long_press(self, udid: str, body: dict, *, skip_sync: bool = False) -> dict:
         if body.get("nx") is None or body.get("ny") is None:
             require(body, "x", "y")
         controller = get_adapter().controller(udid)
         x, y = self._resolve_point(udid, controller, body, "x", "y")
         duration = float(body.get("duration", 0.8) or 0.8)
         controller.long_press(x, y, duration)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             nx, ny = self._normalized_xy(udid, controller, x, y)
             sync_service.fanout(udid, "long_press", {"nx": nx, "ny": ny, "duration": duration})
         return {"x": x, "y": y, "duration": duration}
@@ -144,12 +144,12 @@ class IOSControlService:
         return {"action": action}
 
     @staticmethod
-    def input_text(udid: str, body: dict) -> dict:
+    def input_text(udid: str, body: dict, *, skip_sync: bool = False) -> dict:
         require(body, "text")
         text = str(body["text"])
         controller = get_adapter().controller(udid)
         controller.input_text(text)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             sync_service.fanout(udid, "input_text", {"text": text})
         return {"length": len(text)}
 
@@ -160,11 +160,11 @@ class IOSControlService:
     _NAV_KEYS = {"back", "home", "recent", "appswitch"}
 
     @classmethod
-    def key(cls, udid: str, name: str) -> dict:
+    def key(cls, udid: str, name: str, *, skip_sync: bool = False) -> dict:
         name = (name or "").strip().lower()
         if name in cls._NAV_KEYS:
             get_adapter().controller(udid).press_button(name)
-            if sync_service.get_slaves(udid):
+            if not skip_sync and sync_service.get_slaves(udid):
                 sync_service.fanout(udid, "key", {"name": name})
             return {"key": name}
         ch = cls._KEYS.get(name)
@@ -172,7 +172,7 @@ class IOSControlService:
             raise AppError(ErrorCode.BAD_REQUEST,
                            f"unknown key '{name}' (backspace/enter/tab/space/back/home/recent)")
         get_adapter().controller(udid).input_text(ch)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             sync_service.fanout(udid, "key", {"name": name})
         return {"key": name}
 
@@ -181,7 +181,7 @@ class IOSControlService:
     _DIRECT_BUTTONS = {"back", "recent", "appswitch", "power", "wake", "sleep", "rotate", "menu"}
 
     @classmethod
-    def button(cls, udid: str, name: str) -> dict:
+    def button(cls, udid: str, name: str, *, skip_sync: bool = False) -> dict:
         name = (name or "").strip().lower()
         controller = get_adapter().controller(udid)
         if name == "home":
@@ -201,7 +201,7 @@ class IOSControlService:
             )
         if name == "rotate":
             cls._refresh_geometry(udid, controller)
-        if sync_service.get_slaves(udid):
+        if not skip_sync and sync_service.get_slaves(udid):
             sync_service.fanout(udid, "button", {"name": name})
         return {"button": name}
 

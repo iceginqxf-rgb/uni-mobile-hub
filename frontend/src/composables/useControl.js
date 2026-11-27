@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { controlApi } from "../api/control";
+import { recordAction } from "./useMacroRecorder";
 
 // Control actions for one device. tap/swipe send the rendered display size so
 // the backend maps to device pixels (handles letterbox + scaling).
@@ -82,6 +83,7 @@ export function useControl(udid) {
     error.value = "";
     try {
       await controlApi.input(udid, text);
+      recordAction(udid, { type: "text", text });
     } catch (e) {
       error.value = e.message;
     }
@@ -93,6 +95,7 @@ export function useControl(udid) {
     error.value = "";
     try {
       await controlApi.button(udid, name);
+      recordAction(udid, { type: "button", name });
     } catch (e) {
       error.value = e.message;
     }
@@ -102,6 +105,7 @@ export function useControl(udid) {
     error.value = "";
     try {
       await controlApi.key(udid, name);
+      recordAction(udid, { type: "key", name });
     } catch (e) {
       error.value = e.message;
     }

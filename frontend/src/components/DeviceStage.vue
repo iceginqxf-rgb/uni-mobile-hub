@@ -14,6 +14,18 @@
         </span>
         <button
           type="button"
+          class="card-rec-btn mono"
+          :class="{ active: rec.recording.value }"
+          :title="rec.recording.value ? t('recorder.stop') : t('recorder.start')"
+          :aria-label="rec.recording.value ? t('recorder.stop') : t('recorder.start')"
+          @click="toggleRecording"
+        >
+          <span class="rec-dot" />
+          <span v-if="rec.recording.value">{{ formatElapsed(rec.elapsedSec.value) }}</span>
+          <span v-else>REC</span>
+        </button>
+        <button
+          type="button"
           class="card-fs-btn"
           :title="isFullscreen ? t('fullscreen.exit') : t('fullscreen.enter')"
           :aria-label="isFullscreen ? t('fullscreen.exit') : t('fullscreen.enter')"
@@ -143,10 +155,13 @@ import { useScrcpyStream } from "../composables/useScrcpyStream";
 import { useHevcStream, browserSupportsHevc, iosSupportsHevc } from "../composables/useHevcStream";
 import { useDevices } from "../composables/useDevices";
 import { useControl } from "../composables/useControl";
+import { useScreenRecorder } from "../composables/useScreenRecorder";
+import { useToast } from "../composables/useToast";
 import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
 const { t } = useUiI18n();
+const { push: pushToast } = useToast();
 
 const props = defineProps({
   udid: { type: String, required: true },
@@ -192,10 +207,14 @@ function onFullscreenKey(ev) {
 function onFullscreenCmd(ev) {
   if (ev.detail?.udid === props.udid) toggleFullscreen();
 }
+function onRecordCmd(ev) {
+  if (ev.detail?.udid === props.udid) toggleRecording();
+}
 onMounted(() => {
   document.addEventListener("fullscreenchange", onNativeFullscreenChange);
   window.addEventListener("keydown", onFullscreenKey);
   window.addEventListener("umh:fullscreen", onFullscreenCmd);
+  window.addEventListener("umh:record", onRecordCmd);
 });
 defineExpose({ toggleFullscreen });
 
@@ -206,6 +225,8 @@ const rtc = useWebRTC(props.udid);
 const scrcpyRtc = useScrcpyStream(props.udid);
 const hevc = useHevcStream(props.udid);
 const ctrl = useControl(props.udid);
+const rec = useScreenRecorder();
+const mediaEl = ref(null);
 // "" until health + connect decide. Grid never uses HEVC.
 const mode = ref("");
 
@@ -219,10 +240,39 @@ const activeRtcControl = computed(() => {
   if (mode.value === "scrcpy-rtc") return scrcpyRtc.sendControl;
   return null;
 });
-const activeError = computed(() => hevc.error.value || rtc.error.value || scrcpyRtc.error.value || stream.error.value);
+const activeError = computed(() => hevc.error.value || rtc.error.value || scrcpyRtc.error.value || stream.error.value || rec.error.value);
 
 function onMedia(el) {
+  mediaEl.value = el;
   hevc.bind(el);
+}
+
+function formatElapsed(sec) {
+  const s = Math.max(0, Number(sec || 0));
+  const m = String(Math.floor(s / 60)).padStart(2, "0");
+  const r = String(s % 60).padStart(2, "0");
+  return `${m}:${r}`;
+}
+
+function toggleRecording() {
+  if (rec.recording.value) {
+    rec.stop();
+    return;
+  }
+  const ok = rec.start({
+    mediaStream: activeMediaStream.value,
+    mediaEl: mediaEl.value,
+    deviceName: deviceName.value,
+    onSaved: (clip) => {
+      const kb = Math.max(1, Math.round((clip.sizeBytes || 0) / 1024));
+      pushToast(t("recorder.saved", { file: clip.filename, kb }), "ok");
+    },
+  });
+  if (ok) {
+    pushToast(t("recorder.started"), "ok");
+  } else if (rec.error.value) {
+    pushToast(rec.error.value, "err");
+  }
 }
 
 function useJpeg(prov = "mjpeg") {
@@ -408,6 +458,7 @@ watch(
   () => props.connected,
   (isConnected) => {
     if (!isConnected) {
+      rec.stop();
       scrcpyRtc.stop();
       rtc.stop();
       hevc.stop();
@@ -424,6 +475,7 @@ watch([hevcAvailable, webrtcEnabled], () => {
 });
 
 onUnmounted(() => {
+  rec.dispose();
   hevc.stop();
   hevc.dispose();
   scrcpyRtc.stop();
@@ -436,6 +488,7 @@ onUnmounted(() => {
   document.removeEventListener("fullscreenchange", onNativeFullscreenChange);
   window.removeEventListener("keydown", onFullscreenKey);
   window.removeEventListener("umh:fullscreen", onFullscreenCmd);
+  window.removeEventListener("umh:record", onRecordCmd);
   if (document.fullscreenElement === cardEl.value) {
     document.exitFullscreen?.().catch(() => {});
   }
@@ -443,6 +496,24 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.card-rec-btn {
+  min-height: 22px; height: 22px; padding: 0 7px; gap: 5px;
+  font-size: 0.66rem; font-weight: 700;
+  border-radius: 0; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--muted);
+}
+.card-rec-btn:hover { color: var(--text-strong); border-color: var(--primary); }
+.card-rec-btn .rec-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.card-rec-btn.active {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.14);
+}
+.card-rec-btn.active .rec-dot { animation: rec-pulse 1s ease-in-out infinite; }
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
 .card-fs-btn {
   min-height: 22px; height: 22px; width: 24px; padding: 0;
   border-radius: 0; border: 1px solid var(--border);

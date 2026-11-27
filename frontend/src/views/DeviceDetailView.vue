@@ -89,6 +89,7 @@
            subscription and fetched lists survive tab switches. -->
       <div class="panel-drawer-body" role="tabpanel">
         <ControlPanel v-show="tab === 'control'" :udid="udid" />
+        <ReplayPanel v-show="tab === 'replay'" :udid="udid" />
         <AutomationPanel v-if="!isAndroid" v-show="tab === 'automation'" :udid="udid" />
         <AppsPanel v-show="tab === 'apps'" :udid="udid" />
         <FilesPanel v-show="tab === 'files'" :udid="udid" />
@@ -112,6 +113,7 @@ import DeviceInfoCard from "../components/DeviceInfoCard.vue";
 import ReservationCard from "../components/ReservationCard.vue";
 import QuickActionsCard from "../components/QuickActionsCard.vue";
 import ControlPanel from "../components/ControlPanel.vue";
+import ReplayPanel from "../components/ReplayPanel.vue";
 import AutomationPanel from "../components/AutomationPanel.vue";
 import AppsPanel from "../components/AppsPanel.vue";
 import FilesPanel from "../components/FilesPanel.vue";
@@ -149,6 +151,7 @@ const tab = ref("control");
 const tabs = computed(() =>
   [
     { key: "control", label: t("control.title") },
+    { key: "replay", label: t("replay.tab") },
     { key: "automation", label: t("automation.title") },
     { key: "apps", label: t("apps.title") },
     { key: "files", label: t("files.title") },

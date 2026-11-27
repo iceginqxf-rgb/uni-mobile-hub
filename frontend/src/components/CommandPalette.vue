@@ -123,6 +123,13 @@ const allItems = computed(() => {
         run: () => window.dispatchEvent(new CustomEvent("umh:fullscreen", { detail: { udid } })),
       },
       {
+        id: "act-rec",
+        group: t("palette.grpControl"),
+        label: `${t("recorder.toggle")} (${focusedLabel.value})`,
+        hint: "REC",
+        run: () => window.dispatchEvent(new CustomEvent("umh:record", { detail: { udid } })),
+      },
+      {
         id: "act-home",
         group: t("palette.grpControl"),
         label: `${t("control.home")} (${focusedLabel.value})`,

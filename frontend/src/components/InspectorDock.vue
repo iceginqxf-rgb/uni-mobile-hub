@@ -30,6 +30,7 @@
         <QuickActionsCard :udid="udid" />
       </div>
       <ControlPanel v-show="tab === 'control'" :udid="udid" />
+      <ReplayPanel v-show="tab === 'replay'" :udid="udid" />
       <AutomationPanel v-if="!isAndroid" v-show="tab === 'automation'" :udid="udid" />
       <AppsPanel v-show="tab === 'apps'" :udid="udid" />
       <FilesPanel v-show="tab === 'files'" :udid="udid" />
@@ -44,6 +45,7 @@ import ReservationCard from "./ReservationCard.vue";
 import DeviceInfoCard from "./DeviceInfoCard.vue";
 import QuickActionsCard from "./QuickActionsCard.vue";
 import ControlPanel from "./ControlPanel.vue";
+import ReplayPanel from "./ReplayPanel.vue";
 import AutomationPanel from "./AutomationPanel.vue";
 import AppsPanel from "./AppsPanel.vue";
 import FilesPanel from "./FilesPanel.vue";
@@ -69,6 +71,7 @@ const tabs = computed(() =>
   [
     { key: "info", label: t("inspector.info") },
     { key: "control", label: t("control.title") },
+    { key: "replay", label: t("replay.tab") },
     { key: "automation", label: t("automation.title") },
     { key: "apps", label: t("apps.title") },
     { key: "files", label: t("files.title") },
