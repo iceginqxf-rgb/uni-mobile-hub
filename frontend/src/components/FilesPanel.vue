@@ -45,14 +45,55 @@
     <p v-else-if="listed && !loading" class="muted" style="margin-top: 10px; font-size: 0.8rem">{{ t("files.empty") }}</p>
 
     <!-- Upload — target defaults to the directory currently being browsed. -->
-    <div class="block">
+    <div
+      class="block file-dropzone"
+      :class="{ active: fileDragActive }"
+      @dragenter.prevent="onFileDragEnter"
+      @dragover.prevent="onFileDragOver"
+      @dragleave.prevent="onFileDragLeave"
+      @drop.prevent="onFileDrop"
+    >
       <label class="muted">{{ t("files.uploadLabel") }}</label>
       <div class="row">
         <input v-model="upPath" style="flex: 1; min-width: 0" :placeholder="t('files.uploadPlaceholder')" />
         <button :disabled="uploading" @click="$refs.file.click()">
           {{ uploading ? t("files.uploading") : t("files.chooseFile") }}
         </button>
-        <input ref="file" type="file" style="display: none" @change="onPick" />
+        <input ref="file" type="file" multiple style="display: none" @change="onPick" />
+      </div>
+      <span class="muted drop-subhint">{{ t("drop.filesHint") }}</span>
+    </div>
+
+    <!-- Live & recent transfers for this device (shared with screen drops) -->
+    <div v-if="deviceTransfers.length" class="block xfer-panel">
+      <div class="row" style="justify-content: space-between; align-items: center">
+        <label class="muted">{{ t("drop.queueTitle") }}</label>
+        <button
+          v-if="hasFinishedTransfers"
+          type="button"
+          class="link-btn"
+          @click="clearCompleted(udid)"
+        >
+          {{ t("drop.clearDone") }}
+        </button>
+      </div>
+      <div class="xfer-list">
+        <div v-for="xf in deviceTransfers" :key="xf.id" class="xfer-row">
+          <div class="xfer-head mono">
+            <span class="xfer-kind">{{ xf.kind === 'install' ? 'APP' : 'FILE' }}</span>
+            <span class="xfer-name" :title="xf.filename">{{ xf.filename }}</span>
+            <span class="xfer-stat" :class="xf.status">
+              <template v-if="xf.status === 'uploading'">{{ xf.pct }}%</template>
+              <template v-else-if="xf.status === 'installing'">{{ t('drop.installing') }}</template>
+              <template v-else-if="xf.status === 'done'">{{ t('drop.done') }}</template>
+              <template v-else>{{ t('drop.failed') }}</template>
+            </span>
+          </div>
+          <div class="xfer-bar">
+            <div class="xfer-fill" :class="xf.status" :style="{ width: `${xf.pct}%` }" />
+          </div>
+          <div v-if="xf.error" class="xfer-err">{{ xf.error }}</div>
+        </div>
       </div>
     </div>
 
@@ -84,9 +125,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 import { filesApi } from "../api/files";
 import { useDevices } from "../composables/useDevices";
+import { useTransfers } from "../composables/useTransfers";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useToast } from "../composables/useToast";
 
@@ -94,7 +136,14 @@ const props = defineProps({ udid: { type: String, required: true } });
 const { t } = useUiI18n();
 const { push: toast } = useToast();
 const { devices } = useDevices();
+const { transfersFor, uploadFile, clearCompleted } = useTransfers();
 const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
+const deviceTransfers = transfersFor(toRef(props, "udid"));
+const hasFinishedTransfers = computed(() =>
+  deviceTransfers.value.some((x) => x.status === "done" || x.status === "error"),
+);
+const fileDragDepth = ref(0);
+const fileDragActive = computed(() => fileDragDepth.value > 0);
 
 const path = ref(isAndroid.value ? "/sdcard" : ".");
 const nodes = ref([]); // parsed tree (top-level entries)
@@ -141,8 +190,17 @@ function previewNode(node) {
 }
 function closePreview() { preview.value = null; }
 function onKey(e) { if (e.key === "Escape") closePreview(); }
-onMounted(() => window.addEventListener("keydown", onKey));
-onUnmounted(() => window.removeEventListener("keydown", onKey));
+function onFilesUpdated(ev) {
+  if (ev.detail?.udid === props.udid && listed.value) list();
+}
+onMounted(() => {
+  window.addEventListener("keydown", onKey);
+  window.addEventListener("umh:files-updated", onFilesUpdated);
+});
+onUnmounted(() => {
+  window.removeEventListener("keydown", onKey);
+  window.removeEventListener("umh:files-updated", onFilesUpdated);
+});
 
 // go-ios `fsync tree` returns a flat indented text tree:
 //   |-Books/
@@ -261,23 +319,50 @@ function downloadNode(node) {
   toast(t("files.downloadDone", { name: node.name }));
 }
 
-async function onPick(ev) {
-  const file = ev.target.files?.[0];
-  ev.target.value = "";
-  if (!file) return;
-  // Upload into the browsed directory (target = dir + filename) when a dir is set.
-  const dir = (upPath.value || "").replace(/\/+$/, "");
-  const dst = dir ? `${dir}/${file.name}` : file.name;
+function _hasDragFiles(ev) {
+  const types = ev.dataTransfer?.types;
+  return Boolean(types && Array.from(types).includes("Files"));
+}
+function onFileDragEnter(ev) {
+  if (!_hasDragFiles(ev)) return;
+  fileDragDepth.value += 1;
+}
+function onFileDragOver(ev) {
+  if (!_hasDragFiles(ev)) return;
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
+}
+function onFileDragLeave(ev) {
+  if (!_hasDragFiles(ev) && fileDragDepth.value === 0) return;
+  fileDragDepth.value = Math.max(0, fileDragDepth.value - 1);
+}
+async function _uploadList(files) {
+  if (!files.length) return;
   uploading.value = true;
   error.value = "";
   try {
-    await filesApi.push(props.udid, file, dst);
+    for (const file of files) {
+      const item = await uploadFile(props.udid, file, {
+        isAndroid: isAndroid.value,
+        dstDir: upPath.value,
+        forceFile: true,
+      });
+      if (item) toast(t("drop.uploadDone", { name: file.name, dst: item.dstPath }), "ok");
+    }
     await list();
   } catch (e) {
     error.value = e.message;
   } finally {
     uploading.value = false;
   }
+}
+async function onFileDrop(ev) {
+  fileDragDepth.value = 0;
+  await _uploadList(Array.from(ev.dataTransfer?.files || []));
+}
+async function onPick(ev) {
+  const files = Array.from(ev.target.files || []);
+  ev.target.value = "";
+  await _uploadList(files);
 }
 </script>
 
@@ -334,4 +419,69 @@ async function onPick(ev) {
 .filemodal-body iframe { width: min(88vw, 900px); height: calc(88vh - 120px); border: none; background: #fff; border-radius: 0; }
 .fmodal-enter-active, .fmodal-leave-active { transition: opacity 0.18s ease; }
 .fmodal-enter-from, .fmodal-leave-to { opacity: 0; }
+
+.file-dropzone {
+  padding: 8px;
+  border: 1px dashed var(--border-strong);
+  background: var(--inset);
+  border-radius: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.file-dropzone.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--inset));
+}
+.drop-subhint { font-size: 0.7rem; }
+
+.xfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.xfer-row {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: var(--inset);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.xfer-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+}
+.xfer-kind {
+  padding: 0 4px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 0.62rem;
+  flex: none;
+}
+.xfer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xfer-stat { flex: none; font-size: 0.7rem; color: var(--primary-2); }
+.xfer-stat.done { color: var(--ok); }
+.xfer-stat.error { color: var(--danger); }
+.xfer-bar {
+  height: 3px;
+  background: var(--surface-2);
+  border-radius: 0;
+  overflow: hidden;
+}
+.xfer-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.12s linear;
+}
+.xfer-fill.done { background: var(--ok); }
+.xfer-fill.error { background: var(--danger); }
+.xfer-err { font-size: 0.68rem; color: var(--danger); word-break: break-word; }
 </style>

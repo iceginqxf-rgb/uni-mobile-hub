@@ -44,10 +44,45 @@ async function postForm(path, formData) {
   return payload.data;
 }
 
+// Multipart upload with optional XHR progress callback (pct, loaded, total).
+function postFormWithProgress(path, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", path, true);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable && typeof onProgress === "function") {
+        const pct = Math.min(100, Math.round((ev.loaded / ev.total) * 100));
+        onProgress(pct, ev.loaded, ev.total);
+      }
+    };
+    xhr.onload = () => {
+      let payload = {};
+      try {
+        payload = JSON.parse(xhr.responseText || "{}");
+      } catch {
+        /* non-JSON */
+      }
+      if (xhr.status < 200 || xhr.status >= 300 || payload.success === false) {
+        const err = new Error(payload.message || `Request failed (${xhr.status})`);
+        err.code = payload.code || "HTTP_ERROR";
+        err.detail = payload.detail || {};
+        reject(err);
+        return;
+      }
+      resolve(payload.data);
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => reject(new Error("Upload aborted"));
+    xhr.send(formData);
+  });
+}
+
 export const http = {
   get: (p) => request("GET", p),
   post: (p, body) => request("POST", p, body),
   put: (p, body) => request("PUT", p, body),
   del: (p) => request("DELETE", p),
   postForm,
+  postFormWithProgress,
 };

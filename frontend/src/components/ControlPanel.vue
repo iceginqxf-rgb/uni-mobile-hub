@@ -58,6 +58,34 @@
         <button class="primary" @click="pushClip">{{ t("control.push") }}</button>
         <button @click="pullClip">{{ t("control.pull") }}</button>
       </div>
+      <div class="row clip-actions">
+        <button type="button" class="clip-sync-btn" :disabled="clipSync.busy.value" @click="pushBrowserClip">
+          <span>{{ t("clipSync.pushFromHost") }}</span>
+          <kbd class="mono">⌘⇧V</kbd>
+        </button>
+        <button type="button" class="clip-sync-btn" :disabled="clipSync.busy.value" @click="pullToBrowserClip">
+          <span>{{ t("clipSync.pullToHost") }}</span>
+          <kbd class="mono">⌘⇧C</kbd>
+        </button>
+      </div>
+      <div class="clip-toggles">
+        <label class="clip-check">
+          <input
+            type="checkbox"
+            :checked="clipSync.autoSync.value"
+            @change="clipSync.setAutoSync($event.target.checked)"
+          />
+          <span>{{ t("clipSync.autoSyncLabel") }}</span>
+        </label>
+        <label class="clip-check">
+          <input
+            type="checkbox"
+            :checked="clipSync.autoType.value"
+            @change="clipSync.setAutoType($event.target.checked)"
+          />
+          <span>{{ t("clipSync.autoTypeLabel") }}</span>
+        </label>
+      </div>
       <span v-if="!isAndroid" class="muted" style="font-size: 0.72rem">
         {{ t("control.clipHint") }}
       </span>
@@ -78,6 +106,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useControl } from "../composables/useControl";
+import { useClipboardSync } from "../composables/useClipboardSync";
 import { useDevices } from "../composables/useDevices";
 import { useUiI18n } from "../composables/useUiI18n";
 import { useToast } from "../composables/useToast";
@@ -88,6 +117,7 @@ const props = defineProps({ udid: { type: String, required: true } });
 const { t } = useUiI18n();
 const { push: toast } = useToast();
 const { devices } = useDevices();
+const clipSync = useClipboardSync();
 const isAndroid = computed(() => devices.value.find((d) => d.udid === props.udid)?.platform === "android");
 const ctrl = useControl(props.udid);
 const text = ref("");
@@ -159,6 +189,30 @@ async function pullClip() {
   if (!r.available && !r.text) ctrl.error.value = t("control.clipEmpty");
 }
 
+async function pushBrowserClip() {
+  ctrl.error.value = "";
+  try {
+    const res = await clipSync.pushFromBrowser(props.udid);
+    if (res?.text) clip.value = res.text;
+    toast(res?.typed ? t("clipSync.pushedAndTypedToast") : t("clipSync.pushedToast"), "ok");
+  } catch (e) {
+    ctrl.error.value = e?.message || t("errors.generic");
+    toast(ctrl.error.value, "err");
+  }
+}
+
+async function pullToBrowserClip() {
+  ctrl.error.value = "";
+  try {
+    const text = await clipSync.pullToBrowser(props.udid);
+    clip.value = text;
+    toast(t("clipSync.pulledToast"), "ok");
+  } catch (e) {
+    ctrl.error.value = e?.message || t("control.clipEmpty");
+    toast(ctrl.error.value, "err");
+  }
+}
+
 function downloadShot() {
   const url = ctrl.lastScreenshot.value;
   if (!url) return;
@@ -172,4 +226,41 @@ function downloadShot() {
 <style scoped>
 .block { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
 .shot { margin-top: 8px; max-width: 100%; border: 1px solid var(--border); border-radius: 0; }
+.clip-actions { gap: 6px; flex-wrap: wrap; }
+.clip-sync-btn {
+  flex: 1 1 auto;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: 0;
+}
+.clip-sync-btn kbd {
+  font-size: 0.65rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0 4px;
+}
+.clip-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 2px 0;
+}
+.clip-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.clip-check input {
+  width: 13px;
+  height: 13px;
+  min-height: 0;
+  border-radius: 0;
+  accent-color: var(--primary);
+}
 </style>

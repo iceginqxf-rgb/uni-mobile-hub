@@ -50,6 +50,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
 import { controlApi } from "../api/control";
+import { useClipboardSync } from "../composables/useClipboardSync";
 import { useTheme } from "../composables/useTheme";
 import { useSync } from "../composables/useSync";
 import { useTaskSwitcher } from "../composables/useTaskSwitcher";
@@ -76,6 +77,7 @@ const emit = defineEmits([
 const { t } = useUiI18n();
 const { themes, setTheme } = useTheme();
 const { clearAll: clearAllSync } = useSync();
+const clipSync = useClipboardSync();
 const { openTaskSwitcher } = useTaskSwitcher();
 const { push: toast } = useToast();
 
@@ -158,6 +160,25 @@ const allItems = computed(() => {
         hint: "PNG",
         run: () => controlApi.screenshot(udid).then(() => toast(t("toast.screenshotSaved"), "ok")),
       },
+      {
+        id: "act-clip-push",
+        group: t("palette.grpControl"),
+        label: `${t("clipSync.pushFromHost")} (${focusedLabel.value})`,
+        hint: "⌘⇧V",
+        run: () =>
+          clipSync
+            .pushFromBrowser(udid)
+            .then((res) =>
+              toast(res?.typed ? t("clipSync.pushedAndTypedToast") : t("clipSync.pushedToast"), "ok"),
+            ),
+      },
+      {
+        id: "act-clip-pull",
+        group: t("palette.grpControl"),
+        label: `${t("clipSync.pullToHost")} (${focusedLabel.value})`,
+        hint: "⌘⇧C",
+        run: () => clipSync.pullToBrowser(udid).then(() => toast(t("clipSync.pulledToast"), "ok")),
+      },
     );
   }
 
@@ -224,6 +245,16 @@ const allItems = computed(() => {
       label: t("sync.clearAll"),
       hint: "SYNC",
       run: () => clearAllSync().then(() => toast(t("sync.cleared"), "ok")),
+    },
+    {
+      id: "ws-clip-auto",
+      group: t("palette.grpWorkspace"),
+      label: t("clipSync.toggleAuto"),
+      hint: clipSync.autoSync.value ? "ON" : "OFF",
+      run: () => {
+        const next = clipSync.toggleAutoSync();
+        toast(next ? t("clipSync.autoEnabledToast") : t("clipSync.autoDisabledToast"), "ok");
+      },
     },
   );
 

@@ -24,7 +24,7 @@ flowchart LR
 
 ---
 
-## 二、六阶段演进架构（Phase 1–6）
+## 二、七阶段演进架构（Phase 1–7）
 
 ### Phase 1：Backend Adapter Registry & 跨机节点聚合
 - 在 `services/` 下抽象统一的 `DeviceAdapter` 接口（`discover` / `connect` / `disconnect` / `control` / `stream_info` / `screenshot` / `apps` / `files` / `logs`）。
@@ -56,3 +56,9 @@ flowchart LR
 ### Phase 6：Termix 2.0 工作台与 iOS DVT 深化
 - 前端重构为 `NavRail` + 可调整设备树侧栏 + 支持流休眠/唤醒的浏览器式多标签 + `1×2`/`2×2` 分屏工作区（带内联主从同步）+ 可折叠 `InspectorDock`（文件/应用/日志）+ 全局 `CommandPalette`（`Cmd/Ctrl+K` / 双击左 `Shift`），支持 5 套预设主题与 0px 直角几何、单机真全屏。
 - 后端新增 `ios/dvt_metrics.py` 通过 in-process `pymobiledevice3` DVT `Sysmontap` 与 `DeviceInfo.proclist()` 提供 iOS 实时内存 telemetry 及 `/api/devices/<udid>/running-apps` 多任务切换弹窗，同时消除 STUN 超时与 DDI 重复挂载阻塞。
+
+### Phase 7：节点可观测性、录屏回放、批量自动化与跨端交互增强
+- **节点可观测性看板（`NodesPanel.vue` + `api/nodes_api.py`）**：实时汇总本地适配器与远端 Worker 在线状态、RTT 延迟、指数退避倒计时（`retry_in_sec`/`reconnectable`）、推流模式及活跃 FPS/观察者统计。
+- **屏幕录制与跨端宏回放（`useScreenRecorder.js` + `services/replay_service.py` + `api/replay_api.py` + `ReplayPanel.vue`）**：支持浏览器端原生 `MediaRecorder` 录屏导出（WebM/MP4），以及按 `0.0~1.0` 归一化坐标录制点击/滑动/文本/按键并在单机/群控组/自定义多机上倍速循环回放（JSON 导入/导出）。
+- **多设备批量编排器（`services/batch_service.py` + `api/batch_api.py` + `BatchPanel.vue`）**：支持并行/串行策略、失败自动重试与超时控制的跨机 `.apk`/`.ipa` 批量安装及多步 Agent 动作流编排与日志导出。
+- **跨端交互增强（`useTransfers.js` + `useClipboardSync.js`）**：设备画面与 `FilesPanel` 支持拖放 `.apk`/`.ipa` 自动安装或任意文件上传，通过 XHR 提供统一队列实时进度条；支持 `Cmd/Ctrl+Shift+V/C` 快捷读写及 `Cmd/Ctrl+V` 自动推送/键入剪贴板。

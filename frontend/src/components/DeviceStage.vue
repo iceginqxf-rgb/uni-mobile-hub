@@ -3,8 +3,12 @@
     v-if="!compact"
     ref="cardEl"
     class="device-card"
-    :class="{ live, 'fill-pane': fillPane, 'is-fullscreen': isFullscreen }"
+    :class="{ live, 'fill-pane': fillPane, 'is-fullscreen': isFullscreen, 'is-dragover': dragActive }"
     :style="fillPane || isFullscreen ? {} : { '--card-aspect': aspect }"
+    @dragenter.prevent="onDragEnter"
+    @dragover.prevent="onDragOver"
+    @dragleave.prevent="onDragLeave"
+    @drop.prevent="onDrop"
   >
     <header class="device-card-head">
       <span class="device-card-title">{{ deviceName }}</span>
@@ -12,6 +16,16 @@
         <span class="device-card-chip" :class="live ? 'on' : 'off'">
           <span class="dot" />{{ chipText }}
         </span>
+        <button
+          v-if="clipSync.autoSync.value"
+          type="button"
+          class="card-clip-btn mono active"
+          :title="t('clipSync.autoOnTitle')"
+          :aria-label="t('clipSync.autoOnTitle')"
+          @click="clipSync.toggleAutoSync()"
+        >
+          CLIP
+        </button>
         <button
           type="button"
           class="card-rec-btn mono"
@@ -53,6 +67,29 @@
       :on-media="onMedia"
       :fit-parent="fillPane || isFullscreen"
     />
+
+    <!-- Live drag-and-drop transfer progress strip -->
+    <div v-if="activeTransfers.length" class="stage-xfer-strip" aria-live="polite">
+      <div v-for="xf in activeTransfers" :key="xf.id" class="stage-xfer-item">
+        <div class="stage-xfer-meta mono">
+          <span class="stage-xfer-badge">{{ xf.kind === 'install' ? 'APP' : 'FILE' }}</span>
+          <span class="stage-xfer-name" :title="xf.filename">{{ xf.filename }}</span>
+          <span class="stage-xfer-pct">
+            {{ xf.status === 'installing' ? t('drop.installing') : `${xf.pct}%` }}
+          </span>
+        </div>
+        <div class="stage-xfer-bar">
+          <div class="stage-xfer-fill" :class="{ indeterminate: xf.status === 'installing' }" :style="{ width: `${xf.pct}%` }" />
+        </div>
+      </div>
+    </div>
+
+    <div v-if="dragActive" class="stage-drop-overlay" aria-hidden="true">
+      <div class="stage-drop-box mono">
+        <strong>{{ t('drop.title') }}</strong>
+        <span>{{ t(isAndroid ? 'drop.androidHint' : 'drop.iosHint') }}</span>
+      </div>
+    </div>
 
     <footer class="device-card-actions">
       <button v-if="isAndroid" class="card-action" :title="t('control.back')" @click="ctrl.pressButton('back')">
@@ -146,7 +183,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 import DeviceScreen from "./DeviceScreen.vue";
 import StreamPanel from "./StreamPanel.vue";
 import { useStream } from "../composables/useStream";
@@ -156,6 +193,8 @@ import { useHevcStream, browserSupportsHevc, iosSupportsHevc } from "../composab
 import { useDevices } from "../composables/useDevices";
 import { useControl } from "../composables/useControl";
 import { useScreenRecorder } from "../composables/useScreenRecorder";
+import { useTransfers } from "../composables/useTransfers";
+import { useClipboardSync } from "../composables/useClipboardSync";
 import { useToast } from "../composables/useToast";
 import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
@@ -226,6 +265,11 @@ const scrcpyRtc = useScrcpyStream(props.udid);
 const hevc = useHevcStream(props.udid);
 const ctrl = useControl(props.udid);
 const rec = useScreenRecorder();
+const clipSync = useClipboardSync();
+const { activeFor, uploadFile } = useTransfers();
+const activeTransfers = activeFor(toRef(props, "udid"));
+const dragDepth = ref(0);
+const dragActive = computed(() => dragDepth.value > 0);
 const mediaEl = ref(null);
 // "" until health + connect decide. Grid never uses HEVC.
 const mode = ref("");
@@ -306,6 +350,51 @@ const isAndroid = computed(() => device.value?.platform === "android");
 function onRecent() {
   if (isAndroid.value) ctrl.pressButton("recent");
   else openTaskSwitcher(props.udid);
+}
+
+function _hasFiles(ev) {
+  const types = ev.dataTransfer?.types;
+  return Boolean(types && Array.from(types).includes("Files"));
+}
+function onDragEnter(ev) {
+  if (!_hasFiles(ev)) return;
+  dragDepth.value += 1;
+}
+function onDragOver(ev) {
+  if (!_hasFiles(ev)) return;
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = "copy";
+}
+function onDragLeave(ev) {
+  if (!_hasFiles(ev) && dragDepth.value === 0) return;
+  dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+async function onDrop(ev) {
+  dragDepth.value = 0;
+  const files = Array.from(ev.dataTransfer?.files || []);
+  if (!files.length) return;
+  if (!props.connected) {
+    pushToast(t("drop.notConnected"), "err");
+    return;
+  }
+  for (const file of files) {
+    try {
+      const item = await uploadFile(props.udid, file, { isAndroid: isAndroid.value });
+      if (item?.kind === "install") {
+        pushToast(t("drop.installDone", { name: file.name }), "ok");
+      } else if (item) {
+        pushToast(t("drop.uploadDone", { name: file.name, dst: item.dstPath }), "ok");
+      }
+    } catch (e) {
+      if (e?.code === "PLATFORM_MISMATCH") {
+        pushToast(
+          t("drop.platformMismatch", { name: file.name, os: isAndroid.value ? "Android" : "iOS" }),
+          "err",
+        );
+      } else {
+        pushToast(e?.message || t("errors.generic"), "err");
+      }
+    }
+  }
 }
 const streamEndpoint = computed(() => device.value?.stream_endpoint || null);
 // Prefer the marketing name ("iPhone 15 Pro Max") over the lockdown DeviceName
@@ -496,6 +585,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.device-card { position: relative; }
+.card-clip-btn {
+  min-height: 22px; height: 22px; padding: 0 6px;
+  font-size: 0.64rem; font-weight: 700;
+  border-radius: 0; border: 1px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary-2);
+}
+.card-clip-btn:hover { background: color-mix(in srgb, var(--primary) 26%, transparent); }
 .card-rec-btn {
   min-height: 22px; height: 22px; padding: 0 7px; gap: 5px;
   font-size: 0.66rem; font-weight: 700;
@@ -578,4 +676,91 @@ onUnmounted(() => {
 .dpad-hub { grid-area: 2 / 2; align-self: center; justify-self: center; width: 12px; height: 12px; border-radius: 0; background: var(--border-strong); }
 .dpad-pop-enter-active, .dpad-pop-leave-active { transition: opacity 0.16s ease, transform 0.16s ease; }
 .dpad-pop-enter-from, .dpad-pop-leave-to { opacity: 0; transform: scale(0.92); }
+
+.stage-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(9, 9, 11, 0.78);
+  border: 2px dashed var(--primary);
+  pointer-events: none;
+}
+.stage-drop-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--panel-solid);
+  border: 1px solid var(--primary);
+  border-radius: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-strong);
+}
+.stage-drop-box span {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.stage-xfer-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+}
+.stage-xfer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.stage-xfer-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+.stage-xfer-badge {
+  padding: 0 4px;
+  border: 1px solid var(--primary);
+  color: var(--primary-2);
+  font-size: 0.62rem;
+  flex: none;
+}
+.stage-xfer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+}
+.stage-xfer-pct {
+  color: var(--primary-2);
+  flex: none;
+}
+.stage-xfer-bar {
+  height: 3px;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+}
+.stage-xfer-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.12s linear;
+}
+.stage-xfer-fill.indeterminate {
+  animation: xfer-pulse 1.1s ease-in-out infinite;
+}
+@keyframes xfer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
 </style>

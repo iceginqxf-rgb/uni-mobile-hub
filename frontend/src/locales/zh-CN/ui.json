@@ -549,6 +549,34 @@
     "assistiveTouch": "辅助触控 (小白点)",
     "refresh": "刷新"
   },
+  "drop": {
+    "title": "松开以安装或上传到设备",
+    "androidHint": "支持 .apk 自动安装，或任意文件传入 /sdcard/Download",
+    "iosHint": "支持 .ipa 自动安装，或任意文件传入 Downloads",
+    "filesHint": "支持直接拖拽一个或多个文件到此处上传",
+    "notConnected": "设备未连接，无法执行拖放传输",
+    "platformMismatch": "安装包 {name} 与当前 {os} 设备平台不匹配",
+    "installDone": "已安装：{name}",
+    "uploadDone": "已上传 {name} → {dst}",
+    "installing": "安装中…",
+    "done": "完成",
+    "failed": "失败",
+    "queueTitle": "实时传输进度",
+    "clearDone": "清理已完成"
+  },
+  "clipSync": {
+    "pushFromHost": "从本机推送",
+    "pullToHost": "拉取到本机",
+    "autoSyncLabel": "⌘V 自动发送剪贴板",
+    "autoTypeLabel": "推送后自动键入",
+    "autoOnTitle": "剪贴板自动同步已开启（点击关闭）",
+    "toggleAuto": "切换跨端剪贴板自动同步 (⌘V)",
+    "pushedToast": "已将本机剪贴板推送到设备",
+    "pushedAndTypedToast": "已同步剪贴板并键入到设备",
+    "pulledToast": "已拉取设备剪贴板到本机",
+    "autoEnabledToast": "已开启 ⌘V 自动同步剪贴板",
+    "autoDisabledToast": "已关闭 ⌘V 自动同步剪贴板"
+  },
   "errors": {
     "network": "网络请求失败，请检查连接后重试。",
     "generic": "出错了，请重试。",

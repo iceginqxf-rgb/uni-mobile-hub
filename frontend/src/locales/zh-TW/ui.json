@@ -549,6 +549,34 @@
     "assistiveTouch": "輔助觸控 (小白點)",
     "refresh": "重新整理"
   },
+  "drop": {
+    "title": "放開以安裝或上傳到裝置",
+    "androidHint": "支援 .apk 自動安裝，或任意檔案傳入 /sdcard/Download",
+    "iosHint": "支援 .ipa 自動安裝，或任意檔案傳入 Downloads",
+    "filesHint": "支援直接拖曳一個或多個檔案到此處上傳",
+    "notConnected": "裝置未連線，無法執行拖放傳輸",
+    "platformMismatch": "安裝檔 {name} 與目前 {os} 裝置平台不相符",
+    "installDone": "已安裝：{name}",
+    "uploadDone": "已上傳 {name} → {dst}",
+    "installing": "安裝中…",
+    "done": "完成",
+    "failed": "失敗",
+    "queueTitle": "即時傳輸進度",
+    "clearDone": "清除已完成"
+  },
+  "clipSync": {
+    "pushFromHost": "從本機推送",
+    "pullToHost": "拉取到本機",
+    "autoSyncLabel": "⌘V 自動傳送剪貼簿",
+    "autoTypeLabel": "推送後自動鍵入",
+    "autoOnTitle": "剪貼簿自動同步已開啟（點擊關閉）",
+    "toggleAuto": "切換跨端剪貼簿自動同步 (⌘V)",
+    "pushedToast": "已將本機剪貼簿推送到裝置",
+    "pushedAndTypedToast": "已同步剪貼簿並鍵入到裝置",
+    "pulledToast": "已拉取裝置剪貼簿到本機",
+    "autoEnabledToast": "已開啟 ⌘V 自動同步剪貼簿",
+    "autoDisabledToast": "已關閉 ⌘V 自動同步剪貼簿"
+  },
   "errors": {
     "network": "網路請求失敗，請檢查連線後重試。",
     "generic": "發生錯誤，請重試。",

@@ -549,6 +549,34 @@
     "assistiveTouch": "AssistiveTouch",
     "refresh": "Refresh"
   },
+  "drop": {
+    "title": "Drop to Install or Upload",
+    "androidHint": "Drop .apk to install, or any file to /sdcard/Download",
+    "iosHint": "Drop .ipa to install, or any file to Downloads",
+    "filesHint": "Drag & drop one or more files here to upload",
+    "notConnected": "Connect the device first before dropping files",
+    "platformMismatch": "{name} does not match target {os} platform",
+    "installDone": "Installed {name}",
+    "uploadDone": "Uploaded {name} → {dst}",
+    "installing": "Installing…",
+    "done": "Done",
+    "failed": "Failed",
+    "queueTitle": "Transfers",
+    "clearDone": "Clear finished"
+  },
+  "clipSync": {
+    "pushFromHost": "Push Host Clip",
+    "pullToHost": "Pull to Host",
+    "autoSyncLabel": "⌘V Auto-Sync Paste",
+    "autoTypeLabel": "Auto-Type on Push",
+    "autoOnTitle": "Auto clipboard sync enabled (click to disable)",
+    "toggleAuto": "Toggle Auto Clipboard Sync (⌘V)",
+    "pushedToast": "Host clipboard pushed to device",
+    "pushedAndTypedToast": "Clipboard pushed & typed to device",
+    "pulledToast": "Device clipboard copied to host",
+    "autoEnabledToast": "Auto clipboard sync enabled",
+    "autoDisabledToast": "Auto clipboard sync disabled"
+  },
   "errors": {
     "network": "Network request failed. Please check the connection and try again.",
     "generic": "Something went wrong. Please try again.",

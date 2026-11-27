@@ -193,14 +193,18 @@ import ConfirmDialog from "./components/ConfirmDialog.vue";
 import { useAuth } from "./composables/useAuth";
 import { useReservations } from "./composables/useReservations";
 import { useBatch } from "./composables/useBatch";
+import { useClipboardSync } from "./composables/useClipboardSync";
 import { useDevices } from "./composables/useDevices";
 import { useNodes } from "./composables/useNodes";
 import { useSync } from "./composables/useSync";
+import { useToast } from "./composables/useToast";
 import { useWorkbench } from "./composables/useWorkbench";
 import { useUiI18n } from "./composables/useUiI18n";
 
 const auth = useAuth();
 const { t } = useUiI18n();
+const { push: toast } = useToast();
+const clipSync = useClipboardSync();
 const { fetchReservations } = useReservations();
 const { devices, loading: devicesLoading, refresh: refreshDevices, checkHealth } = useDevices();
 const { runningCount: runningBatch } = useBatch();
@@ -324,12 +328,59 @@ function onGlobalKeyDown(ev) {
     toggleInspector();
     return;
   }
+  if (
+    auth.state.user &&
+    activeNav.value === "devices" &&
+    !paletteOpen.value &&
+    currentFocusedUdid.value &&
+    !_isEditable(ev.target) &&
+    (ev.metaKey || ev.ctrlKey) &&
+    ev.shiftKey
+  ) {
+    const key = ev.key.toLowerCase();
+    if (key === "v") {
+      ev.preventDefault();
+      clipSync
+        .pushFromBrowser(currentFocusedUdid.value)
+        .then((res) => toast(res?.typed ? t("clipSync.pushedAndTypedToast") : t("clipSync.pushedToast"), "ok"))
+        .catch((e) => toast(e?.message || t("errors.generic"), "err"));
+      return;
+    }
+    if (key === "c") {
+      ev.preventDefault();
+      clipSync
+        .pullToBrowser(currentFocusedUdid.value)
+        .then(() => toast(t("clipSync.pulledToast"), "ok"))
+        .catch((e) => toast(e?.message || t("control.clipEmpty"), "err"));
+      return;
+    }
+  }
   if (ev.code === "ShiftLeft") {
     if (ev.repeat) return;
   } else {
     dirtyShiftCombo = true;
     lastLeftShiftUp = 0;
   }
+}
+
+function onGlobalPaste(ev) {
+  if (
+    !auth.state.user ||
+    activeNav.value !== "devices" ||
+    paletteOpen.value ||
+    !clipSync.autoSync.value ||
+    !currentFocusedUdid.value ||
+    _isEditable(ev.target)
+  ) {
+    return;
+  }
+  const text = ev.clipboardData?.getData("text/plain") || "";
+  if (!text) return;
+  ev.preventDefault();
+  clipSync
+    .pushText(currentFocusedUdid.value, text)
+    .then((res) => toast(res?.typed ? t("clipSync.pushedAndTypedToast") : t("clipSync.pushedToast"), "ok"))
+    .catch((e) => toast(e?.message || t("errors.generic"), "err"));
 }
 
 function onGlobalKeyUp(ev) {
@@ -351,6 +402,7 @@ function onGlobalKeyUp(ev) {
 onMounted(async () => {
   window.addEventListener("keydown", onGlobalKeyDown);
   window.addEventListener("keyup", onGlobalKeyUp);
+  window.addEventListener("paste", onGlobalPaste);
   await auth.checkAuth();
   if (auth.state.user) { fetchReservations(); loadDevices(); }
   auth.state.ready = true;
@@ -358,6 +410,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener("keydown", onGlobalKeyDown);
   window.removeEventListener("keyup", onGlobalKeyUp);
+  window.removeEventListener("paste", onGlobalPaste);
 });
 </script>
 
