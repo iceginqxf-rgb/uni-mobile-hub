@@ -221,18 +221,53 @@ class IOSAdapter:
         self.tunnel.stop()
         return self.tunnel.ensure_running(timeout=timeout)
 
+    @staticmethod
+    def _is_ddi_mounted_inproc(udid: str) -> bool:
+        """Fast in-process check (~0.1s) whether DDI is already mounted via usbmux."""
+        try:
+            import asyncio
+            import concurrent.futures
+            import inspect
+            from pymobiledevice3.lockdown import create_using_usbmux
+            from pymobiledevice3.services.mobile_image_mounter import MobileImageMounterService
+
+            async def _check() -> bool:
+                async with asyncio.timeout(5.0):
+                    ld = await create_using_usbmux(serial=udid, autopair=False)
+                    try:
+                        mounter = MobileImageMounterService(lockdown=ld)
+                        imgs = mounter.copy_devices()
+                        if inspect.isawaitable(imgs):
+                            imgs = await imgs
+                        return any(isinstance(d, dict) and d.get("IsMounted") for d in (imgs or []))
+                    finally:
+                        res = ld.close()
+                        if inspect.isawaitable(res):
+                            await res
+
+            try:
+                asyncio.get_running_loop()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return bool(pool.submit(asyncio.run, _check()).result())
+            except RuntimeError:
+                return bool(asyncio.run(_check()))
+        except Exception:
+            return False
+
     def _mount_ddi(self, udid: str) -> tuple[bool, str]:
         """Mount the Developer Disk Image — needed for iOS 17+ xctest/WDA.
 
-        PRIMARY: pymobiledevice3 ``mounter auto-mount`` — fetches the TSS
-        personalized image from Apple, no-admin, and is version-adaptive, so it
-        handles new iOS (e.g. 26.x) that go-ios's static image catalog resolves
-        wrong. FALLBACK: go-ios ``image auto``. Best-effort, never raises.
+        Fast path checks in-process MobileImageMounterService (~0.1s) so already-mounted
+        devices skip ``mounter auto-mount`` (which otherwise stalls 15-30s talking to TSS).
+        PRIMARY: pymobiledevice3 ``mounter auto-mount``. FALLBACK: go-ios ``image auto``.
         """
+        if self._is_ddi_mounted_inproc(udid):
+            return True, "already mounted (in-process)"
+
         from services.command_runner import pymobiledevice3_cmd, run_command
 
         try:
-            res = run_command(pymobiledevice3_cmd() + ["mounter", "auto-mount", "--udid", udid], timeout=180)
+            res = run_command(pymobiledevice3_cmd() + ["mounter", "auto-mount", "--udid", udid], timeout=45)
             blob = f"{res.stdout}\n{res.stderr}".lower()
             if res.ok or "already" in blob or "mounted successfully" in blob:
                 return True, "pymobiledevice3 auto-mount ok"

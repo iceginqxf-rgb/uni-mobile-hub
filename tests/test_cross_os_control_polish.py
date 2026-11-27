@@ -233,3 +233,21 @@ class TestCrossOSControlPolish(unittest.TestCase):
             adapter._connect_unlocked("IOS-CACHE-1")
         self.assertNotIn("IOS-CACHE-1", adapter._ddi_mounted)
         self.assertNotIn("IOS-CACHE-1", adapter._wda_bundle_cache)
+
+    def test_mount_ddi_skips_subprocess_when_already_mounted_inproc(self):
+        adapter = IOSAdapter({"IOS_USE_GOIOS": "1", "IOS_GOIOS_TUNNEL": "0"})
+        adapter.goios = MagicMock()
+        with (
+            patch.object(IOSAdapter, "_is_ddi_mounted_inproc", return_value=True),
+            patch("services.command_runner.run_command") as run_cmd_mock,
+        ):
+            ok, msg = adapter._mount_ddi("IOS-DDI-FAST")
+            self.assertTrue(ok)
+            self.assertEqual(msg, "already mounted (in-process)")
+            run_cmd_mock.assert_not_called()
+            adapter.goios.mount_developer_image.assert_not_called()
+
+    def test_wda_controller_closed_client_returns_false_health_check(self):
+        ctrl = WDAController("http://127.0.0.1:18999")
+        ctrl.close()
+        self.assertFalse(ctrl.health_check())

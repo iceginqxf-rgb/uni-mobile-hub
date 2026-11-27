@@ -34,7 +34,7 @@ class WDAController:
         url = path if path.startswith("/") else f"/{path}"
         try:
             resp = self._client.request(method, url, **kwargs)
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, RuntimeError) as exc:
             raise AppError(
                 ErrorCode.WDA_NOT_RUNNING,
                 "WebDriverAgent is not reachable",
