@@ -14,6 +14,7 @@ from typing import cast
 
 from flask import request
 
+from nodes.scrcpy_webrtc_relay import scrcpy_webrtc_relay
 from services import get_adapter
 from services.runtime_state import state
 from socketio_handlers.streams_events import stop_orphaned_streams
@@ -28,6 +29,8 @@ def register(socketio) -> None:
         sid = cast(str, getattr(request, "sid"))
         with suppress(Exception):
             get_adapter().webrtc.stop_sid(sid)
+        with suppress(Exception):
+            scrcpy_webrtc_relay.close_sid(sid)
         emptied = []
         with suppress(Exception):
             emptied = state.drop_sid(sid)

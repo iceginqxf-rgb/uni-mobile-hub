@@ -12,6 +12,7 @@ from typing import cast
 
 from flask import request
 
+from nodes.scrcpy_webrtc_relay import scrcpy_webrtc_relay
 from services import get_adapter
 from services.runtime_state import state
 from utils.app_errors import AppError, ErrorCode
@@ -93,3 +94,61 @@ def register(socketio) -> None:
         sid = _sid()
         state.remove_viewer(udid, sid)
         get_adapter().webrtc.stop(sid, udid)
+
+    @socketio.on("scrcpy:webrtc:offer")
+    def _scrcpy_offer(data):
+        data = data or {}
+        udid, sdp = data.get("udid"), data.get("sdp")
+        sid = _sid()
+        if not (udid and sdp):
+            socketio.emit(
+                "scrcpy:webrtc:closed",
+                {"udid": udid, "reason": "udid and sdp required"},
+                room=sid,
+            )
+            return
+        from socketio_handlers import reservation_gate
+
+        denied = reservation_gate(udid)
+        if denied:
+            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": f"denied:{denied}"}, room=sid)
+            return
+        try:
+            state.add_viewer(udid, sid)
+            state.touch(udid)
+            scrcpy_webrtc_relay.start_offer(
+                sid,
+                udid,
+                sdp,
+                lambda event, payload: socketio.emit(event, payload, room=sid),
+            )
+        except AppError as exc:
+            state.remove_viewer(udid, sid)
+            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": exc.message}, room=sid)
+        except Exception as exc:  # noqa: BLE001
+            state.remove_viewer(udid, sid)
+            _log.exception("scrcpy:webrtc:offer failed for %s", udid)
+            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": str(exc)}, room=sid)
+
+    @socketio.on("scrcpy:webrtc:ice")
+    def _scrcpy_ice(data):
+        data = data or {}
+        udid = data.get("udid")
+        if not udid:
+            return
+        scrcpy_webrtc_relay.send_ice(
+            _sid(),
+            udid,
+            data.get("candidate", ""),
+            data.get("sdpMid"),
+            data.get("sdpMLineIndex"),
+        )
+
+    @socketio.on("scrcpy:webrtc:close")
+    def _scrcpy_close(data):
+        udid = (data or {}).get("udid")
+        if not udid:
+            return
+        sid = _sid()
+        state.remove_viewer(udid, sid)
+        scrcpy_webrtc_relay.close(sid, udid)

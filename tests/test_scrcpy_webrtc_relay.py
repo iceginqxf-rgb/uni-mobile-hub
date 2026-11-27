@@ -1,0 +1,107 @@
+"""Tests for Hub-side same-origin Scrcpy WebRTC signaling relay (Issue #11)."""
+
+from __future__ import annotations
+
+import unittest
+from unittest.mock import patch
+
+import httpx
+
+from nodes.node_config import RemoteNodeConfig
+from nodes.remote_node_adapter import RemoteNodeAdapter
+from nodes.scrcpy_webrtc_relay import ScrcpyWebRTCRelay
+from services.runtime_state import state
+
+
+class _FakeSioClient:
+    def __init__(self, http_session):
+        self.http_session = http_session
+        self.handlers = {}
+        self.connected_args = None
+        self.emitted = []
+        self.disconnected = False
+
+    def on(self, event):
+        def _deco(fn):
+            self.handlers[event] = fn
+            return fn
+        return _deco
+
+    def connect(self, url, **kwargs):
+        self.connected_args = (url, kwargs)
+
+    def emit(self, event, data):
+        self.emitted.append((event, data))
+
+    def disconnect(self):
+        self.disconnected = True
+
+
+class TestScrcpyWebRTCRelay(unittest.TestCase):
+    def setUp(self):
+        self._prev = dict(state.devices)
+        state.devices.clear()
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/auth/login":
+                return httpx.Response(200, json={"ok": True}, headers={"Set-Cookie": "rog_sess=abc123; Path=/"})
+            if request.url.path == "/api/devices":
+                return httpx.Response(200, json={"devices": ["DEV1"], "names": {"DEV1": "Phone1"}, "geometry": {}})
+            if request.url.path in ("/api/reservations", "/api/start"):
+                return httpx.Response(200, json={"status": "ok"})
+            return httpx.Response(404)
+
+        cfg = RemoteNodeConfig(id="rog", url="http://127.0.0.1:18002", type="scrcpy", username="u", password="p")
+        self.adapter = RemoteNodeAdapter({}, cfg, transport=httpx.MockTransport(handler))
+        self.adapter.discover()
+        self.udid = self.adapter.discover()[0].udid
+
+    def tearDown(self):
+        state.devices.clear()
+        state.devices.update(self._prev)
+
+    def test_relay_forwards_offer_answer_ice_and_teardown(self):
+        relay = ScrcpyWebRTCRelay()
+        clients = []
+        emitted_to_browser = []
+
+        def factory(sess):
+            self.assertFalse(sess.trust_env)
+            c = _FakeSioClient(sess)
+            clients.append(c)
+            return c
+
+        with patch("nodes.scrcpy_webrtc_relay.get_adapter", return_value=self.adapter):
+            relay.start_offer(
+                "sid-1",
+                self.udid,
+                "v=0-offer",
+                lambda ev, payload: emitted_to_browser.append((ev, payload)),
+                client_factory=factory,
+            )
+
+        self.assertEqual(len(clients), 1)
+        c = clients[0]
+        url, kwargs = c.connected_args
+        self.assertEqual(url, "http://127.0.0.1:18002")
+        self.assertEqual(kwargs["headers"]["Origin"], "http://127.0.0.1:18002")
+        self.assertIn("rog_sess=abc123", kwargs["headers"]["Cookie"])
+        self.assertEqual(c.emitted[0], ("webrtc:offer", {"device_id": "DEV1", "sdp": "v=0-offer"}))
+
+        # Browser ICE -> upstream
+        self.assertTrue(relay.send_ice("sid-1", self.udid, "cand-1", "0", 0))
+        self.assertEqual(
+            c.emitted[1],
+            ("webrtc:ice", {"device_id": "DEV1", "candidate": "cand-1", "sdpMid": "0", "sdpMLineIndex": 0}),
+        )
+
+        # Upstream answer & ICE -> browser
+        c.handlers["webrtc:answer"]({"device_id": "DEV1", "sdp": "v=0-ans", "type": "answer"})
+        c.handlers["webrtc:ice"]({"device_id": "DEV1", "candidate": "srv-cand", "sdpMid": "0", "sdpMLineIndex": 0})
+        self.assertEqual(emitted_to_browser[0], ("scrcpy:webrtc:answer", {"udid": self.udid, "sdp": "v=0-ans", "type": "answer"}))
+        self.assertEqual(emitted_to_browser[1], ("scrcpy:webrtc:ice", {"udid": self.udid, "candidate": "srv-cand", "sdpMid": "0", "sdpMLineIndex": 0}))
+
+        # Close sid cleans up upstream
+        relay.close_sid("sid-1")
+        self.assertIn(("webrtc:close", {"device_id": "DEV1"}), c.emitted)
+        self.assertTrue(c.disconnected)
