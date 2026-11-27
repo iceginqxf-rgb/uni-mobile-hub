@@ -121,3 +121,16 @@ class TestCrossOSControlPolish(unittest.TestCase):
         with patch("services.ios_control_service.get_adapter", return_value=_FakeAdapter(_SimpleCtrl())):
             ios_control_service.swipe(udid, {"x1": 10, "y1": 900, "x2": 10, "y2": 400, "duration": 0.35, "hold_end": 0.5})
         self.assertEqual(calls, [(10, 900, 10, 400, 0.35)])
+
+    def test_wda_press_button_recent_triggers_app_switcher(self):
+        ctrl = WDAController("http://127.0.0.1:18999")
+        ctrl.get_window_size = lambda: (428, 926)  # type: ignore[method-assign]
+        calls = []
+        ctrl._session_request = lambda method, sub, **kw: calls.append((method, sub, kw["json"]))  # type: ignore[method-assign]
+
+        ctrl.press_button("recent")
+        self.assertEqual(calls[0][1], "/actions")
+        seq = calls[0][2]["actions"][0]["actions"]
+        self.assertEqual([a["type"] for a in seq], ["pointerMove", "pointerDown", "pointerMove", "pause", "pointerUp"])
+        self.assertEqual((seq[0]["x"], seq[0]["y"]), (214, 924))
+        self.assertEqual(seq[3]["duration"], 900)

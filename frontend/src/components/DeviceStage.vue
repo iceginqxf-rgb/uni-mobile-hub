@@ -24,10 +24,10 @@
       <button class="card-action" :title="t('control.home')" @click="ctrl.pressButton('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" /></svg>
       </button>
-      <button v-if="isAndroid" class="card-action" :title="t('control.recent')" @click="ctrl.pressButton('recent')">
+      <button class="card-action" :title="t('control.recent')" @click="ctrl.pressButton('recent')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
       </button>
-      <button v-else class="card-action" :title="t('control.lock')" @click="ctrl.pressButton('lock')">
+      <button v-if="!isAndroid" class="card-action" :title="t('control.lock')" @click="ctrl.pressButton('lock')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
       </button>
       <!-- D-pad — summoned as a floating pad above the footer -->

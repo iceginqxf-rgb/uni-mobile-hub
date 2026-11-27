@@ -192,26 +192,16 @@ function onUp(ev) {
   const dist = Math.hypot(p.x - start.x, p.y - start.y);
   const dt = performance.now() - start.t;
 
-  // iPhone Home-bar bottom-edge swipe up: route quick/tall gestures directly
-  // to WDA's /wda/homescreen because iOS blocks synthetic W3C touch gestures in
-  // the system bottom-edge Home indicator zone.
+  // iPhone Home-bar bottom-edge swipe up: quick flick -> Home screen;
+  // slow drag & hold -> iOS App Switcher (`recent`).
   if (props.platform === "ios" && p.h > 0 && start.y >= p.h * 0.88) {
     const dy = start.y - p.y;
     const dx = Math.abs(p.x - start.x);
-    if (dy >= p.h * 0.10 && dy > dx * 1.2) {
-      if (dt < 480 || dy >= p.h * 0.30) {
+    if (dy >= p.h * 0.08 && dy > dx * 1.2) {
+      if (dt < 450) {
         pressButton("home");
       } else {
-        swipe(
-          Math.round(start.x),
-          Math.round(p.h - 1),
-          Math.round(p.x),
-          Math.round(p.h * 0.58),
-          p.w,
-          p.h,
-          0.35,
-          0.55,
-        );
+        pressButton("recent");
       }
       start = null;
       return;

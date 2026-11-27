@@ -200,9 +200,29 @@ class WDAController:
 
     # ── hardware buttons ─────────────────────────────────────────────
     def press_button(self, name: str) -> None:
-        """Hardware button by WDA name: home / volumeUp / volumeDown / snapshot.
-        Session-scoped in WDA (the top-level route 404s)."""
+        """Hardware button by WDA name: home / volumeUp / volumeDown / snapshot,
+        plus cross-OS ``recent`` / ``appswitch`` mapped to iOS App Switcher."""
+        key = (name or "").strip().lower()
+        if key in ("recent", "appswitch"):
+            self.app_switcher()
+            return
         self._session_request("POST", "/wda/pressButton", json={"name": name})
+
+    def app_switcher(self) -> None:
+        """Open the iOS App Switcher (drag up from bottom edge and pause mid-screen).
+
+        Uses W3C Touch Actions with an explicit ``pause`` at the destination
+        before releasing, which avoids ``dragfromtoforduration``'s ambiguity
+        (pre-drag hold vs post-drag hold) across WDA builds.
+        """
+        try:
+            w, h = self.get_window_size()
+        except AppError:
+            w, h = (428, 926)
+        cx = max(1, int(w) // 2)
+        from_y = max(1, int(h) - 2)
+        to_y = max(1, int(round(int(h) * 0.58)))
+        self.swipe(cx, from_y, cx, to_y, duration=0.4, hold_end=0.9)
 
     def home(self) -> None:
         """Open SpringBoard.
