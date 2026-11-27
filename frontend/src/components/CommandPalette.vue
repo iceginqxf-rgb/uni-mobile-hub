@@ -68,6 +68,7 @@ const emit = defineEmits([
   "set-layout",
   "select-overview",
   "open-nodes",
+  "open-batch",
   "toggle-sidebar",
   "toggle-inspector",
 ]);
@@ -174,6 +175,13 @@ const allItems = computed(() => {
       label: t("nodes.title"),
       hint: "NODES",
       run: () => emit("open-nodes"),
+    },
+    {
+      id: "ws-batch",
+      group: t("palette.grpWorkspace"),
+      label: t("batch.title"),
+      hint: "BATCH",
+      run: () => emit("open-batch"),
     },
     {
       id: "ws-single",

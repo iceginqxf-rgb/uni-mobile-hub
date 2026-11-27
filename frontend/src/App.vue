@@ -8,6 +8,7 @@
       :is-admin="auth.isAdmin.value"
       :sidebar-open="sidebarOpen"
       :offline-nodes="offlineNodes"
+      :running-batch="runningBatch"
       @toggle-sidebar="toggleSidebar"
     />
 
@@ -81,6 +82,8 @@
         />
 
         <SyncPanel v-else-if="activeNav === 'sync'" />
+
+        <BatchPanel v-else-if="activeNav === 'batch'" />
 
         <div v-else-if="activeNav === 'settings'" class="device-grid" style="grid-template-columns: minmax(0, 620px)">
           <div class="card">
@@ -159,6 +162,7 @@
     @set-layout="onPaletteSetLayout"
     @select-overview="onPaletteOverview"
     @open-nodes="activeNav = 'nodes'"
+    @open-batch="activeNav = 'batch'"
     @toggle-sidebar="toggleSidebar"
     @toggle-inspector="toggleInspector"
   />
@@ -172,6 +176,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DeviceDetailView from "./views/DeviceDetailView.vue";
 import LoginView from "./components/LoginView.vue";
 import AdminPanel from "./components/AdminPanel.vue";
+import BatchPanel from "./components/BatchPanel.vue";
 import NodesPanel from "./components/NodesPanel.vue";
 import SyncPanel from "./components/SyncPanel.vue";
 import DeviceMatrix from "./components/DeviceMatrix.vue";
@@ -187,6 +192,7 @@ import Toasts from "./components/Toasts.vue";
 import ConfirmDialog from "./components/ConfirmDialog.vue";
 import { useAuth } from "./composables/useAuth";
 import { useReservations } from "./composables/useReservations";
+import { useBatch } from "./composables/useBatch";
 import { useDevices } from "./composables/useDevices";
 import { useNodes } from "./composables/useNodes";
 import { useSync } from "./composables/useSync";
@@ -197,6 +203,7 @@ const auth = useAuth();
 const { t } = useUiI18n();
 const { fetchReservations } = useReservations();
 const { devices, loading: devicesLoading, refresh: refreshDevices, checkHealth } = useDevices();
+const { runningCount: runningBatch } = useBatch();
 const { offlineNodes, refresh: refreshNodes } = useNodes();
 const { refresh: refreshSync } = useSync();
 const {
@@ -238,7 +245,9 @@ const sectionTitle = computed(() =>
       ? t("app.admin")
       : activeNav.value === "nodes"
         ? t("nav.nodes")
-        : t("nav.sync"),
+        : activeNav.value === "batch"
+          ? t("nav.batch")
+          : t("nav.sync"),
 );
 
 const currentFocusedUdid = computed(() => {

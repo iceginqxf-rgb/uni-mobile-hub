@@ -21,6 +21,11 @@
       >
         {{ offlineNodes > 9 ? "9+" : offlineNodes }}
       </span>
+      <span
+        v-else-if="it.id === 'batch' && runningBatch > 0"
+        class="nav-batch-dot"
+        :title="t('batch.runningPill', { n: runningBatch })"
+      />
     </button>
 
     <button
@@ -64,6 +69,7 @@ defineProps({
   isAdmin: { type: Boolean, default: false },
   sidebarOpen: { type: Boolean, default: true },
   offlineNodes: { type: Number, default: 0 },
+  runningBatch: { type: Number, default: 0 },
 });
 defineEmits(["update:modelValue", "toggle-sidebar"]);
 const { t } = useUiI18n();
@@ -85,6 +91,11 @@ const items = computed(() => [
     icon: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
   },
   {
+    id: "batch",
+    label: t("nav.batch"),
+    icon: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/>',
+  },
+  {
     id: "settings",
     label: t("nav.settings"),
     icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 003.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V8a1.65 1.65 0 001.51 1H22a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
@@ -95,6 +106,15 @@ const items = computed(() => [
 <style scoped>
 .nav-item {
   position: relative;
+}
+.nav-batch-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary);
 }
 .nav-alert-badge {
   position: absolute;
