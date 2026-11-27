@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from android.adb_client import AdbClient
 from ios.ios_adapter import IOSAdapter
+from ios.wda_controller import WDAController
 from services.device_models import MobileDevice
 from services.ios_control_service import ios_control_service
 from services.runtime_state import state
@@ -98,3 +99,25 @@ class TestCrossOSControlPolish(unittest.TestCase):
         t1.join()
         t2.join()
         self.assertEqual(active["max"], 1)
+
+    def test_wda_swipe_hold_end_adds_pause_before_pointer_up(self):
+        ctrl = WDAController("http://127.0.0.1:18999")
+        sent = []
+        ctrl._session_request = lambda method, sub, **kw: sent.append((method, sub, kw["json"]))  # type: ignore[method-assign]
+        ctrl.swipe(200, 900, 200, 500, duration=0.35, hold_end=0.55)
+        actions = sent[0][2]["actions"][0]["actions"]
+        self.assertEqual([a["type"] for a in actions], ["pointerMove", "pointerDown", "pointerMove", "pause", "pointerUp"])
+        self.assertEqual(actions[3]["duration"], 550)
+
+        # Controllers without hold_end stay backwards-compatible via IOSControlService
+        udid = "AND-SIMPLE-1"
+        state.devices[udid] = MobileDevice(udid=udid, platform="android", source="adb", screen_width=1080, screen_height=2400)
+        calls = []
+
+        class _SimpleCtrl:
+            def swipe(self, x1, y1, x2, y2, duration=0.3):
+                calls.append((x1, y1, x2, y2, duration))
+
+        with patch("services.ios_control_service.get_adapter", return_value=_FakeAdapter(_SimpleCtrl())):
+            ios_control_service.swipe(udid, {"x1": 10, "y1": 900, "x2": 10, "y2": 400, "duration": 0.35, "hold_end": 0.5})
+        self.assertEqual(calls, [(10, 900, 10, 400, 0.35)])

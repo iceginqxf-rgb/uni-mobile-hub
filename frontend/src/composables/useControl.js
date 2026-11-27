@@ -35,11 +35,12 @@ export function useControl(udid) {
     );
   }
 
-  function swipe(x1, y1, x2, y2, displayWidth, displayHeight, duration = 0.3) {
+  function swipe(x1, y1, x2, y2, displayWidth, displayHeight, duration = 0.3, holdEnd = 0) {
     return _touch(() =>
       controlApi.swipe(udid, {
         x1, y1, x2, y2,
         display_width: displayWidth, display_height: displayHeight, duration,
+        ...(holdEnd > 0 ? { hold_end: holdEnd } : {}),
       }),
     );
   }

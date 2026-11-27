@@ -3,9 +3,9 @@ import { useSocket } from "./useSocket";
 import { devicesApi } from "../api/devices";
 
 // Same-origin Hub WebRTC signaling relay for remote Scrcpy worker nodes.
-// Media flows via WebRTC + "input" DataChannel while all Socket.IO signaling
-// stays on the Hub's authenticated Socket.IO connection (avoids cross-origin
-// worker Cookie/CORS blocks). Falls back cleanly via onFallback() on failure/timeout.
+// WebAppFlaskscrcpy creates its own server-side "input" DataChannel
+// (ordered=false, maxRetransmits=0) during handle_offer, so the browser MUST
+// accept it via `ondatachannel` rather than sending on a client-created one.
 export function useScrcpyStream(udid) {
   const { on, emit } = useSocket();
   const stream = ref(null);
@@ -13,6 +13,7 @@ export function useScrcpyStream(udid) {
   const error = ref("");
 
   let pc = null;
+  let bootstrapChannel = null;
   let inputChannel = null;
   let devSize = { w: 1080, h: 2400 };
   let negId = 0;
@@ -34,25 +35,38 @@ export function useScrcpyStream(udid) {
       try { pc.close(); } catch { /* ignore */ }
       pc = null;
     }
+    bootstrapChannel = null;
     inputChannel = null;
     fallbackCb = null;
     stream.value = null;
     running.value = false;
   }
 
-  function _mapPoint(x, y, dw, dh) {
+  function _mapPoint(x, y, dw, dh, vw, vh) {
+    const tw = vw || devSize.w;
+    const th = vh || devSize.h;
     if (!dw || !dh) return { x: Math.round(x), y: Math.round(y) };
     return {
-      x: Math.round((x / dw) * devSize.w),
-      y: Math.round((y / dh) * devSize.h),
+      x: Math.max(0, Math.min(tw - 1, Math.round((x / dw) * tw))),
+      y: Math.max(0, Math.min(th - 1, Math.round((y / dh) * th))),
     };
   }
 
   function sendControl(msg) {
     if (!inputChannel || inputChannel.readyState !== "open") return false;
     const t = msg?.type;
+    if (t === "touch") {
+      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
+      inputChannel.send(JSON.stringify({ t: "touch", x: pt.x, y: pt.y, action: msg.action }));
+      return true;
+    }
+    if (t === "scroll") {
+      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
+      inputChannel.send(JSON.stringify({ t: "scroll", x: pt.x, y: pt.y, h: msg.h || 0, v: msg.v || 0 }));
+      return true;
+    }
     if (t === "tap" || t === "doubletap") {
-      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height);
+      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
       const fire = () => {
         inputChannel.send(JSON.stringify({ t: "touch", x: pt.x, y: pt.y, action: 0 }));
         setTimeout(() => {
@@ -66,7 +80,7 @@ export function useScrcpyStream(udid) {
       return true;
     }
     if (t === "longpress") {
-      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height);
+      const pt = _mapPoint(msg.x, msg.y, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
       const ms = Math.max(400, Math.round((msg.duration || 0.8) * 1000));
       inputChannel.send(JSON.stringify({ t: "touch", x: pt.x, y: pt.y, action: 0 }));
       setTimeout(() => {
@@ -77,8 +91,8 @@ export function useScrcpyStream(udid) {
       return true;
     }
     if (t === "swipe") {
-      const p1 = _mapPoint(msg.x1, msg.y1, msg.display_width, msg.display_height);
-      const p2 = _mapPoint(msg.x2, msg.y2, msg.display_width, msg.display_height);
+      const p1 = _mapPoint(msg.x1, msg.y1, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
+      const p2 = _mapPoint(msg.x2, msg.y2, msg.display_width, msg.display_height, msg.video_width, msg.video_height);
       inputChannel.send(JSON.stringify({
         t: "swipe",
         startX: p1.x,
@@ -122,7 +136,15 @@ export function useScrcpyStream(udid) {
 
     const myPc = new RTCPeerConnection(rtcOpts);
     pc = myPc;
-    inputChannel = myPc.createDataChannel("input");
+    // Include an SCTP m=application section in our offer; the server pushes its
+    // own "input" DataChannel over `ondatachannel`. Keep "bootstrap" off `inputChannel`.
+    bootstrapChannel = myPc.createDataChannel("bootstrap");
+    myPc.ondatachannel = (ev) => {
+      if (pc !== myPc) return;
+      if (ev.channel?.label === "input") {
+        inputChannel = ev.channel;
+      }
+    };
     myPc.addTransceiver("video", { direction: "recvonly" });
 
     timeoutHandle = setTimeout(() => {

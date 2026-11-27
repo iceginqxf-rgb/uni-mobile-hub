@@ -82,7 +82,14 @@ class IOSControlService:
         x1, y1 = self._resolve_point(udid, controller, body, "x1", "y1")
         x2, y2 = self._resolve_point(udid, controller, body, "x2", "y2")
         duration = float(body.get("duration", 0.3) or 0.3)
-        controller.swipe(x1, y1, x2, y2, duration)
+        hold_end = float(body.get("hold_end", 0) or 0)
+        if hold_end > 0:
+            try:
+                controller.swipe(x1, y1, x2, y2, duration, hold_end=hold_end)
+            except TypeError:
+                controller.swipe(x1, y1, x2, y2, duration)
+        else:
+            controller.swipe(x1, y1, x2, y2, duration)
         if sync_service.get_slaves(udid):
             nx1, ny1 = self._normalized_xy(udid, controller, x1, y1)
             nx2, ny2 = self._normalized_xy(udid, controller, x2, y2)

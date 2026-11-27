@@ -165,20 +165,31 @@ class WDAController:
         }
         self._session_request("POST", "/actions", json=actions)
 
-    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration: float = 0.3) -> None:
+    def swipe(
+        self,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        duration: float = 0.3,
+        hold_end: float = 0.0,
+    ) -> None:
         ms = max(1, int(duration * 1000))
+        seq = [
+            {"type": "pointerMove", "duration": 0, "x": int(x1), "y": int(y1)},
+            {"type": "pointerDown", "button": 0},
+            {"type": "pointerMove", "duration": ms, "x": int(x2), "y": int(y2)},
+        ]
+        if hold_end and hold_end > 0:
+            seq.append({"type": "pause", "duration": max(1, int(hold_end * 1000))})
+        seq.append({"type": "pointerUp", "button": 0})
         actions = {
             "actions": [
                 {
                     "type": "pointer",
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
-                    "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": int(x1), "y": int(y1)},
-                        {"type": "pointerDown", "button": 0},
-                        {"type": "pointerMove", "duration": ms, "x": int(x2), "y": int(y2)},
-                        {"type": "pointerUp", "button": 0},
-                    ],
+                    "actions": seq,
                 }
             ]
         }
