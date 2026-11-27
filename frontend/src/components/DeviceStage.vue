@@ -341,6 +341,9 @@ watch(
   (isConnected) => {
     if (!isConnected) {
       scrcpyRtc.stop();
+      rtc.stop();
+      hevc.stop();
+      stream.stop();
       mode.value = "";
       return;
     }

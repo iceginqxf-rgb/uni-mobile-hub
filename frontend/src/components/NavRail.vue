@@ -1,6 +1,5 @@
 <template>
-  <nav class="nav-rail" aria-label="primary">
-    <!-- Brand mark — single source: frontend/public/logo.svg -->
+  <nav class="wb-rail" aria-label="primary">
     <img class="nav-brand" src="/logo.svg" alt="" />
 
     <button
@@ -15,7 +14,18 @@
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" v-html="it.icon" />
-      <span class="nav-label">{{ it.label }}</span>
+    </button>
+
+    <button
+      v-if="modelValue === 'devices'"
+      class="nav-item"
+      :class="{ active: sidebarOpen }"
+      :title="sidebarOpen ? t('workbench.collapseSidebar') : t('workbench.expandSidebar')"
+      @click="$emit('toggle-sidebar')"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" />
+      </svg>
     </button>
 
     <div class="nav-spacer" />
@@ -34,7 +44,6 @@
         <path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z" />
         <path d="M9 12l2 2 4-4" />
       </svg>
-      <span class="nav-label">{{ t("app.admin") }}</span>
     </button>
   </nav>
 </template>
@@ -43,11 +52,14 @@
 import { computed } from "vue";
 import { useUiI18n } from "../composables/useUiI18n";
 
-defineProps({ modelValue: { type: String, default: "devices" }, isAdmin: { type: Boolean, default: false } });
-defineEmits(["update:modelValue"]);
+defineProps({
+  modelValue: { type: String, default: "devices" },
+  isAdmin: { type: Boolean, default: false },
+  sidebarOpen: { type: Boolean, default: true },
+});
+defineEmits(["update:modelValue", "toggle-sidebar"]);
 const { t } = useUiI18n();
 
-// Inline SVG path bodies (stroke inherits currentColor).
 const items = computed(() => [
   {
     id: "devices",

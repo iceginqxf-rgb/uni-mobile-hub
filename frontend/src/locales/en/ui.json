@@ -24,6 +24,28 @@
     "simplifiedChinese": "简体中文",
     "traditionalChinese": "繁體中文"
   },
+  "themes": {
+    "dark": "Obsidian Dark",
+    "light": "Zinc Light",
+    "tokyo-night": "Tokyo Night",
+    "nord": "Nord",
+    "dracula": "Dracula"
+  },
+  "workbench": {
+    "sidebar": "Devices",
+    "localNode": "local",
+    "searchPlaceholder": "Filter name / UDID / node…",
+    "noMatches": "No matching devices",
+    "overview": "Overview",
+    "tabsLabel": "Open device tabs",
+    "collapseSidebar": "Collapse sidebar (⌘B / Ctrl+B)",
+    "expandSidebar": "Expand sidebar (⌘B / Ctrl+B)",
+    "sleepTab": "Pause video stream",
+    "wakeTab": "Resume video stream",
+    "closeTab": "Close tab",
+    "tabOpen": "Tab open",
+    "sleepingBanner": "Stream paused to save bandwidth while keeping reservation active."
+  },
   "devices": {
     "title": "Devices",
     "refresh": "Refresh",

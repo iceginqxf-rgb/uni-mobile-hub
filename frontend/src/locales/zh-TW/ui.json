@@ -24,6 +24,28 @@
     "simplifiedChinese": "简体中文",
     "traditionalChinese": "繁體中文"
   },
+  "themes": {
+    "dark": "黑曜暗黑 (Dark)",
+    "light": "極簡淺灰 (Light)",
+    "tokyo-night": "東京夜 (Tokyo Night)",
+    "nord": "北歐冷灰 (Nord)",
+    "dracula": "德古拉 (Dracula)"
+  },
+  "workbench": {
+    "sidebar": "裝置樹",
+    "localNode": "本機節點",
+    "searchPlaceholder": "搜尋名稱 / UDID / 節點…",
+    "noMatches": "無符合裝置",
+    "overview": "裝置總覽",
+    "tabsLabel": "已開啟裝置分頁",
+    "collapseSidebar": "收合裝置樹 (⌘B / Ctrl+B)",
+    "expandSidebar": "展開裝置樹 (⌘B / Ctrl+B)",
+    "sleepTab": "休眠此畫面串流",
+    "wakeTab": "喚醒畫面串流",
+    "closeTab": "關閉分頁",
+    "tabOpen": "分頁已開啟",
+    "sleepingBanner": "目前裝置畫面已休眠以節省頻寬，連線與占用仍保留。"
+  },
   "devices": {
     "title": "裝置",
     "refresh": "重新整理",

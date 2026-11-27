@@ -13,16 +13,16 @@ const { toasts } = useToast();
 
 <style scoped>
 .toasts {
-  position: fixed; right: 16px; bottom: 16px; z-index: 1000;
-  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  position: fixed; right: 14px; bottom: 14px; z-index: 1000;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
 }
 .toast {
-  min-width: 150px; max-width: 320px; padding: 10px 14px; border-radius: 10px;
-  font-size: 0.84rem; color: var(--text);
+  min-width: 150px; max-width: 340px; padding: 8px 12px; border-radius: 7px;
+  font-size: 0.8rem; color: var(--text-strong);
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow); animation: toast-in .18s ease;
+  box-shadow: var(--shadow); animation: toast-in .16s ease;
 }
-.toast.ok { border-color: rgba(52, 211, 153, 0.5); }
-.toast.err { border-color: rgba(248, 113, 113, 0.5); }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.toast.ok { border-left: 3px solid var(--ok); }
+.toast.err { border-left: 3px solid var(--danger); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 </style>

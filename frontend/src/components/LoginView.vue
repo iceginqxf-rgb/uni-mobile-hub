@@ -187,66 +187,61 @@ async function onSubmit() {
   position: absolute;
   border-radius: 50%;
   background: var(--primary);
-  filter: blur(90px);
-  opacity: 0.22;
+  filter: blur(110px);
+  opacity: 0.12;
   pointer-events: none;
   z-index: 0;
 }
-.auth-screen::before { width: 380px; height: 380px; top: -130px; left: -110px; }
-.auth-screen::after { width: 320px; height: 320px; right: -110px; bottom: -130px; }
+.auth-screen::before { width: 340px; height: 340px; top: -120px; left: -100px; }
+.auth-screen::after { width: 300px; height: 300px; right: -100px; bottom: -120px; }
 
 .auth-toolbar {
-  position: absolute; top: 18px; right: 18px; z-index: 2;
-  display: flex; align-items: center; gap: 10px;
+  position: absolute; top: 16px; right: 16px; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
 }
 
 .auth-card {
   position: relative; z-index: 1;
-  width: min(420px, 100%);
+  width: min(400px, 100%);
   background: var(--panel-solid);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 10px;
   box-shadow: var(--shadow);
-  padding: 32px;
+  padding: 28px;
 }
 
-.auth-brand { text-align: center; margin-bottom: 24px; }
+.auth-brand { text-align: center; margin-bottom: 20px; }
 .auth-brand-lockup { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
-.auth-logo { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 9px; }
-.auth-brand h1 { font-size: 1.25rem; margin: 0; color: var(--text-strong); }
-.auth-brand p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.auth-logo { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 7px; }
+.auth-brand h1 { font-size: 1.15rem; margin: 0; color: var(--text-strong); }
+.auth-brand p { margin: 0; font-size: 0.8rem; color: var(--muted); }
 
-/* Segmented switch — one track with a raised "pill" for the active tab, so it
-   reads as a mode toggle rather than two buttons competing with submit. */
 .auth-tabs {
-  display: flex; gap: 4px; margin-bottom: 22px; padding: 4px;
-  background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+  display: flex; gap: 4px; margin-bottom: 18px; padding: 3px;
+  background: var(--inset); border: 1px solid var(--border); border-radius: 8px;
 }
 .auth-tabs button {
-  flex: 1; padding: 8px 10px; border: none; border-radius: 9px;
+  flex: 1; padding: 6px 10px; min-height: 30px; border: none; border-radius: 6px;
   background: transparent; color: var(--muted); cursor: pointer;
-  font-weight: 600; font-size: 0.9rem; transition: background 0.15s ease, color 0.15s ease;
+  font-weight: 600; font-size: 0.84rem; transition: background 0.14s ease, color 0.14s ease;
 }
 .auth-tabs button:hover:not(.active) { color: var(--text); }
-/* Active = primary-blue tint (matches the topbar segmented switch / nav / tabs).
-   Android's raised-lighter-pill mapping inverts on iOS's dark palette — the
-   active panel-solid was DARKER than the track and read as a sunken hole. */
 .auth-tabs button.active {
-  background: rgba(59, 130, 246, 0.18);
+  background: var(--surface-1);
   color: var(--text-strong);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.4);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
-.auth-form { display: flex; flex-direction: column; gap: 14px; }
-.auth-form label { display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form label { display: flex; flex-direction: column; gap: 5px; font-size: 0.78rem; color: var(--muted); }
 .auth-form input {
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
-  background: var(--surface-1); color: var(--text); font-size: 0.95rem;
+  padding: 8px 10px; min-height: 36px; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--inset); color: var(--text); font-size: 0.9rem;
 }
-.auth-form input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.32); }
+.auth-form input:focus { outline: none; border-color: var(--primary); }
 
 .auth-submit {
-  margin-top: 6px; padding: 11px; border: none; border-radius: 10px;
+  margin-top: 4px; padding: 9px; min-height: 36px; border: none; border-radius: 6px;
   background: var(--primary); color: var(--primary-fg); font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }

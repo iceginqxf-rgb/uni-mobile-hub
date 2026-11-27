@@ -1,13 +1,13 @@
 <template>
   <div>
-    <div class="page-head">
+    <div class="page-head" :class="{ compact: embedded }">
       <div class="row" style="flex-wrap: wrap">
-        <button @click="$emit('back')">{{ t("detail.back") }}</button>
-        <h1 style="font-size: 1.05rem">{{ device?.marketing || device?.name || udid }}</h1>
-        <span v-if="device" class="pill" :class="(isAndroid ? device.connected : device.wda_running) ? 'on' : 'off'">
+        <button v-if="!embedded" @click="$emit('back')">{{ t("detail.back") }}</button>
+        <h1 style="font-size: 0.98rem">{{ device?.marketing || device?.name || udid }}</h1>
+        <span v-if="device" class="pill mono" :class="(isAndroid ? device.connected : device.wda_running) ? 'on' : 'off'">
           {{ isAndroid ? `Scrcpy ${device.connected ? t("detail.androidReady") : t("detail.androidDown")}` : `WDA ${device.wda_running ? t("detail.wdaRunning") : t("detail.wdaDown")}` }}
         </span>
-        <span v-if="device?.node_id && device.node_id !== 'local'" class="pill warn">{{ device.node_id }}</span>
+        <span v-if="device?.node_id && device.node_id !== 'local'" class="pill warn mono">{{ device.node_id }}</span>
         <!-- Connection controls live with the WDA status, not in the left column. -->
         <span style="flex: 1 1 auto" />
         <!-- Normal user who hasn't claimed this device: steer them to 占用
@@ -32,14 +32,18 @@
       </div>
     </div>
 
-    <!-- Quick device switcher (only with >1 device) — hop without going back. -->
+    <!-- Quick device switcher (only outside embedded workbench tabs) -->
     <DeviceStrip
-      v-if="devices.length > 1"
+      v-if="!embedded && devices.length > 1"
       :devices="devices"
       :current="udid"
       @select="$emit('select', $event)"
     />
 
+    <div v-if="sleeping" class="banner warn row between wrap">
+      <span>{{ t("workbench.sleepingBanner") }}</span>
+      <button type="button" class="primary" @click="$emit('wake')">{{ t("workbench.wakeTab") }}</button>
+    </div>
     <div v-if="connecting" class="banner warn">
       {{ t("detail.connectingBanner") }}
     </div>
@@ -57,7 +61,7 @@
       <!-- CENTER: live screen. The footer "更多" button toggles the control panel. -->
       <DeviceStage
         :udid="udid"
-        :connected="canCtl && !!device?.connected"
+        :connected="canCtl && !!device?.connected && !sleeping"
         :more-open="showPanels"
         @toggle-more="showPanels = !showPanels"
       />
@@ -121,12 +125,11 @@ import { useUiI18n } from "../composables/useUiI18n";
 
 const props = defineProps({
   udid: { type: String, required: true },
-  // Auto-connect on mount only when the device was explicitly chosen. The
-  // default-landing fallback device stays idle until the user hits 连接 — mirrors
-  // Android (lands on the stage, but streaming/connect is a manual action).
   autoConnect: { type: Boolean, default: true },
+  embedded: { type: Boolean, default: false },
+  sleeping: { type: Boolean, default: false },
 });
-const emit = defineEmits(["back", "select"]);
+const emit = defineEmits(["back", "select", "wake"]);
 
 const { t } = useUiI18n();
 const { devices, connect, disconnect } = useDevices();

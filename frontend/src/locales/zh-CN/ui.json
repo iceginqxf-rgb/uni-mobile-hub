@@ -24,6 +24,28 @@
     "simplifiedChinese": "简体中文",
     "traditionalChinese": "繁體中文"
   },
+  "themes": {
+    "dark": "黑曜暗黑 (Dark)",
+    "light": "极简浅灰 (Light)",
+    "tokyo-night": "东京夜 (Tokyo Night)",
+    "nord": "北欧冷灰 (Nord)",
+    "dracula": "德古拉 (Dracula)"
+  },
+  "workbench": {
+    "sidebar": "设备树",
+    "localNode": "本机节点",
+    "searchPlaceholder": "搜索名称 / UDID / 节点…",
+    "noMatches": "无匹配设备",
+    "overview": "设备总览",
+    "tabsLabel": "已打开设备标签",
+    "collapseSidebar": "收起设备树 (⌘B / Ctrl+B)",
+    "expandSidebar": "展开设备树 (⌘B / Ctrl+B)",
+    "sleepTab": "休眠此画面流",
+    "wakeTab": "唤醒画面流",
+    "closeTab": "关闭标签",
+    "tabOpen": "标签已打开",
+    "sleepingBanner": "当前设备画面已休眠以节省带宽，连接与占用仍保留。"
+  },
   "devices": {
     "title": "设备",
     "refresh": "刷新",

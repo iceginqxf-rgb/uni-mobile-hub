@@ -3,7 +3,6 @@
     <div v-if="state.open" class="cd-backdrop" @click.self="cancel" @keydown.esc="cancel">
       <div :role="state.mode === 'prompt' ? 'dialog' : 'alertdialog'" class="cd-box" aria-modal="true" :aria-label="state.message">
         <p v-if="state.message" class="cd-msg">{{ state.message }}</p>
-        <!-- Prompt mode: free-text input bound to shared state.value. Enter submits, Esc cancels (via backdrop handler). -->
         <input
           v-if="state.mode === 'prompt'"
           ref="inputEl"
@@ -36,8 +35,6 @@ const { t } = useUiI18n();
 const cancelBtn = ref(null);
 const inputEl = ref(null);
 
-// Focus the input in prompt mode (so the user can start typing immediately);
-// in confirm mode focus the safe cancel button. Esc/backdrop also cancel.
 watch(
   () => state.open,
   (open) => {
@@ -59,36 +56,30 @@ watch(
 .cd-backdrop {
   position: fixed; inset: 0; z-index: 1100;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); padding: 20px;
+  background: rgba(0, 0, 0, 0.56); backdrop-filter: blur(3px); padding: 20px;
 }
 .cd-box {
-  width: 100%; max-width: 360px; padding: 20px 20px 16px;
+  width: 100%; max-width: 360px; padding: 16px 16px 14px;
   background: var(--panel-solid); border: 1px solid var(--border-strong);
-  border-radius: var(--radius); box-shadow: var(--shadow);
-  animation: cd-in 0.16s ease;
+  border-radius: 8px; box-shadow: var(--shadow);
+  animation: cd-in 0.14s ease;
 }
 .cd-msg {
-  margin: 0 0 14px; font-size: 0.92rem; line-height: 1.5; color: var(--text);
+  margin: 0 0 12px; font-size: 0.88rem; line-height: 1.5; color: var(--text);
   white-space: pre-line;
 }
 .cd-input {
-  width: 100%; height: 38px; padding: 0 12px; margin: 0 0 16px;
-  border: 1px solid var(--border-strong); border-radius: 9px;
-  background: var(--panel); color: var(--text); font-size: 0.92rem;
-  box-sizing: border-box;
+  width: 100%; height: 34px; min-height: 34px; padding: 0 10px; margin: 0 0 14px;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--inset); color: var(--text); font-size: 0.88rem;
 }
-.cd-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); }
-.cd-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.cd-btn {
-  min-width: 76px; padding: 8px 16px; border-radius: 9px; font-size: 0.86rem;
-  cursor: pointer; border: 1px solid var(--border-strong);
-  background: var(--panel); color: var(--text);
-}
-.cd-btn:hover { border-color: var(--text-muted); }
-.cd-primary { border-color: #6366f1; background: #6366f1; color: #fff; }
+.cd-input:focus { outline: none; border-color: var(--primary); }
+.cd-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.cd-btn { min-width: 70px; min-height: 30px; padding: 4px 12px; border-radius: 6px; font-size: 0.82rem; }
+.cd-primary { border-color: var(--primary); background: var(--primary); color: var(--primary-fg); }
 .cd-primary:hover { filter: brightness(1.08); }
-.cd-primary.danger { border-color: #ef4444; background: #ef4444; }
-@keyframes cd-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
-.cd-fade-enter-active, .cd-fade-leave-active { transition: opacity 0.15s ease; }
+.cd-primary.danger { border-color: var(--danger); background: var(--danger); color: #fff; }
+@keyframes cd-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+.cd-fade-enter-active, .cd-fade-leave-active { transition: opacity 0.14s ease; }
 .cd-fade-enter-from, .cd-fade-leave-to { opacity: 0; }
 </style>
