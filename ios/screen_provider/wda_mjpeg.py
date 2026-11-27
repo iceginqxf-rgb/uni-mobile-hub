@@ -80,7 +80,7 @@ class WdaMjpegProvider(BaseScreenProvider):
                     with suppress(Exception):
                         if client is not None:
                             client.close()
-                    time.sleep(0.5)
+                    time.sleep(0.15)
             self._cleanup()
             raise AppError(
                 ErrorCode.MJPEG_STREAM_FAILED,

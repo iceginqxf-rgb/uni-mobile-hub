@@ -25,7 +25,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import av
 from av.error import FFmpegError
-from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription
 from aiortc.exceptions import InvalidStateError
 from aiortc.mediastreams import MediaStreamError, MediaStreamTrack
 
@@ -348,6 +348,14 @@ class WebRTCBridge:
         self._gen: Dict[Tuple[str, str], int] = {}
         self._tune_encoder_bitrate()
 
+    def _rtc_configuration(self) -> RTCConfiguration:
+        raw = str(self.config.get("IOS_WEBRTC_ICE_SERVERS", "") or "").strip()
+        if raw:
+            servers = [RTCIceServer(urls=u.strip()) for u in raw.split(",") if u.strip()]
+            return RTCConfiguration(iceServers=servers)
+        # Host-only ICE on LAN/localhost/Tailscale avoids aiortc's 5s STUN timeout.
+        return RTCConfiguration(iceServers=[])
+
     def _tune_encoder_bitrate(self) -> None:
         """Raise aiortc's software-encoder bitrate caps. Defaults (H264 1→3 Mbps,
         VP8 0.5→1.5) are far too low for full-retina motion, so a fast swipe gets
@@ -435,7 +443,7 @@ class WebRTCBridge:
             with suppress(Exception):
                 track.stop()
             return None
-        pc = RTCPeerConnection()
+        pc = RTCPeerConnection(configuration=self._rtc_configuration())
         pc.addTrack(track)
         self._peers[key] = (pc, track)
         self._prefer_h264(pc, track)  # H264-first; browser falls back to VP8 if needed

@@ -180,3 +180,56 @@ class TestCrossOSControlPolish(unittest.TestCase):
         event_names = [e[0] for e in emitted]
         self.assertIn("device_released", event_names)
         self.assertIn("devices:changed", event_names)
+
+    def test_webrtc_bridge_rtc_configuration_defaults_to_no_stun(self):
+        from services.webrtc_bridge import WebRTCBridge
+
+        bridge = WebRTCBridge({})
+        cfg = bridge._rtc_configuration()
+        self.assertEqual(cfg.iceServers, [])
+
+        bridge_custom = WebRTCBridge(
+            {"IOS_WEBRTC_ICE_SERVERS": "stun:a.example:3478, stun:b.example:3478"}
+        )
+        cfg_custom = bridge_custom._rtc_configuration()
+        self.assertEqual(len(cfg_custom.iceServers), 2)
+        self.assertEqual(cfg_custom.iceServers[0].urls, "stun:a.example:3478")
+        self.assertEqual(cfg_custom.iceServers[1].urls, "stun:b.example:3478")
+
+    def test_ios_adapter_caches_ddi_and_wda_bundle(self):
+        adapter = IOSAdapter({"IOS_USE_GOIOS": "1", "IOS_GOIOS_TUNNEL": "0"})
+        adapter.goios = MagicMock()
+        adapter.goios.is_available.return_value = True
+        adapter.goios.list_apps.return_value = [{"bundle_id": "com.example.WDA.xctrunner"}]
+        fake_proc = MagicMock()
+        fake_proc.poll.return_value = None
+        adapter.goios.run_wda.return_value = fake_proc
+        adapter._mount_ddi = MagicMock(return_value=(True, "ok"))  # type: ignore[method-assign]
+        adapter._poll_wda = MagicMock()  # type: ignore[method-assign]
+
+        ctrl = MagicMock()
+        ctrl.health_check.return_value = True
+        adapter._bring_up_wda("IOS-CACHE-1", ctrl)
+        # Simulate runner exited on second connect while DDI & bundle stay cached
+        fake_proc.poll.return_value = 1
+        adapter._bring_up_wda("IOS-CACHE-1", ctrl)
+
+        adapter._mount_ddi.assert_called_once_with("IOS-CACHE-1")
+        adapter.goios.list_apps.assert_called_once_with("IOS-CACHE-1")
+
+        # Cache clears when health_check fails after _bring_up_wda
+        state.devices["IOS-CACHE-1"] = MobileDevice(udid="IOS-CACHE-1", platform="ios", source="ios")
+        adapter._wda_bundle_cache["IOS-CACHE-1"] = "com.example.WDA.xctrunner"
+        adapter._ddi_mounted.add("IOS-CACHE-1")
+        adapter.port_forward = MagicMock()
+        adapter.port_forward.start_forward.return_value = MagicMock(local_port=18100)
+        ctrl_bad = MagicMock()
+        ctrl_bad.health_check.return_value = False
+        adapter._controller = MagicMock(return_value=ctrl_bad)  # type: ignore[method-assign]
+        adapter._bring_up_wda = MagicMock()  # type: ignore[method-assign]
+        from utils.app_errors import AppError
+
+        with self.assertRaises(AppError):
+            adapter._connect_unlocked("IOS-CACHE-1")
+        self.assertNotIn("IOS-CACHE-1", adapter._ddi_mounted)
+        self.assertNotIn("IOS-CACHE-1", adapter._wda_bundle_cache)

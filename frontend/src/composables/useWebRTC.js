@@ -76,14 +76,29 @@ export function useWebRTC(udid) {
   function _waitIceComplete(peer) {
     if (peer.iceGatheringState === "complete") return Promise.resolve();
     return new Promise((resolve) => {
-      const check = () => {
-        if (peer.iceGatheringState === "complete") {
-          peer.removeEventListener("icegatheringstatechange", check);
-          resolve();
+      let settled = false;
+      let settleTimer = null;
+      let capTimer = null;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        peer.removeEventListener("icegatheringstatechange", onState);
+        peer.removeEventListener("icecandidate", onCand);
+        if (settleTimer) clearTimeout(settleTimer);
+        if (capTimer) clearTimeout(capTimer);
+        resolve();
+      };
+      const onState = () => {
+        if (peer.iceGatheringState === "complete") done();
+      };
+      const onCand = (ev) => {
+        if (ev.candidate && !settleTimer) {
+          settleTimer = setTimeout(done, 120);
         }
       };
-      peer.addEventListener("icegatheringstatechange", check);
-      setTimeout(resolve, 2000); // safety: don't hang if it stalls
+      peer.addEventListener("icegatheringstatechange", onState);
+      peer.addEventListener("icecandidate", onCand);
+      capTimer = setTimeout(done, 600);
     });
   }
 

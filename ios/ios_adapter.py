@@ -74,6 +74,8 @@ class IOSAdapter:
         self._goios_tunnel_enabled = str(config.get("IOS_GOIOS_TUNNEL", "1")) == "1"
         self._wda_procs: dict[str, subprocess.Popen] = {}  # udid -> go-ios runwda Popen
         self._ddi_error: dict[str, str] = {}  # udid -> last DDI-mount failure reason (or absent)
+        self._ddi_mounted: set[str] = set()
+        self._wda_bundle_cache: dict[str, str] = {}
         # WebRTC transport (optional, IOS_ENABLE_WEBRTC). Reuses the JPEG
         # ScreenProviders as its video source.
         self.webrtc = WebRTCBridge(config)
@@ -105,6 +107,8 @@ class IOSAdapter:
         # a device that's "not found" and leave a ghost card in the grid.
         for udid in state.remove_missing(present, source=self.source_id):
             _log.info("device unplugged, tearing down: %s", udid)
+            self._ddi_mounted.discard(udid)
+            self._wda_bundle_cache.pop(udid, None)
             with suppress(Exception):
                 self.disconnect(udid)
         if scanned:
@@ -141,6 +145,8 @@ class IOSAdapter:
         if not controller.health_check():
             self._bring_up_wda(udid, controller)
             if not controller.health_check():
+                self._ddi_mounted.discard(udid)
+                self._wda_bundle_cache.pop(udid, None)
                 out = self._wda_launch_output(udid)
                 if out:
                     _log.warning("runwda output for %s:\n%s", udid, out)
@@ -285,26 +291,29 @@ class IOSAdapter:
             # Auto-mount it (no-admin, via the tunnel; cached + fast no-op when
             # already mounted) so connect doesn't depend on a manual mount step.
             # Cache dir defaults to resources/devimages (override: IOS_DDI_CACHE).
-            mounted, mmsg = self._mount_ddi(udid)
-            # Best-effort only: go-ios's `image auto` matches the DDI per device/
-            # version itself. If it didn't mount (e.g. a DDI is already mounted by
-            # Xcode, or go-ios mis-resolved a too-new iOS), DON'T block — still try
-            # runwda; it works whenever a valid DDI is present by any means.
-            if mounted:
-                self._ddi_error.pop(udid, None)
-            else:
-                self._ddi_error[udid] = str(mmsg)
-                _log.info("DDI auto-mount not confirmed for %s (continuing to runwda anyway): %s",
-                          udid, str(mmsg)[-160:])
+            if udid not in self._ddi_mounted:
+                mounted, mmsg = self._mount_ddi(udid)
+                # Best-effort only: if mounted, skip redundant mounter calls on reconnect.
+                if mounted:
+                    self._ddi_mounted.add(udid)
+                    self._ddi_error.pop(udid, None)
+                else:
+                    self._ddi_error[udid] = str(mmsg)
+                    _log.info("DDI auto-mount not confirmed for %s (continuing to runwda anyway): %s",
+                              udid, str(mmsg)[-160:])
             proc = self._wda_procs.get(udid)
             if proc is None or proc.poll() is not None:
                 configured = self.config.get(
                     "IOS_WDA_BUNDLE_ID", "com.facebook.WebDriverAgentRunner.xctrunner"
                 )
-                installed = [
-                    app["bundle_id"] for app in self.goios.list_apps(udid)
-                ]
-                bundle = self.resolve_wda_bundle(configured, installed)
+                bundle = self._wda_bundle_cache.get(udid)
+                if not bundle:
+                    installed = [
+                        app["bundle_id"] for app in self.goios.list_apps(udid)
+                    ]
+                    bundle = self.resolve_wda_bundle(configured, installed)
+                    if bundle:
+                        self._wda_bundle_cache[udid] = bundle
                 if bundle != configured:
                     _log.info(
                         "WDA bundle %s is not on %s; using installed %s",
@@ -363,7 +372,7 @@ class IOSAdapter:
             if controller.health_check():
                 _log.info("WDA came up for %s", udid)
                 return
-            time.sleep(1.0)
+            time.sleep(0.25)
 
     def disconnect(self, udid: str) -> None:
         # Close any WebRTC peer connections for this device FIRST. That cascades
