@@ -147,3 +147,44 @@ class TestScrcpyWebRTCRelay(unittest.TestCase):
             # Second close forwards to browser cleanly
             c.handlers["webrtc:closed"]({"device_id": "DEV1", "reason": "device_unavailable"})
             self.assertEqual(emitted[0], ("scrcpy:webrtc:closed", {"udid": self.udid, "reason": "device_unavailable"}))
+
+    def test_closed_old_session_does_not_emit_stale_closed_to_new_offer(self):
+        relay = ScrcpyWebRTCRelay()
+        clients = []
+        emitted = []
+
+        def factory(sess):
+            c = _FakeSioClient(sess)
+            clients.append(c)
+            return c
+
+        with patch("nodes.scrcpy_webrtc_relay.get_adapter", return_value=self.adapter):
+            relay.start_offer(
+                "sid-3",
+                self.udid,
+                "offer-1",
+                lambda e, p: emitted.append((e, p)),
+                offer_id="o1",
+                client_factory=factory,
+            )
+            relay.start_offer(
+                "sid-3",
+                self.udid,
+                "offer-2",
+                lambda e, p: emitted.append((e, p)),
+                offer_id="o2",
+                client_factory=factory,
+            )
+
+        c1, c2 = clients
+        self.assertTrue(c1.disconnected)
+        # Old torn-down client fires late close -> must be ignored cleanly
+        c1.handlers["webrtc:closed"]({"device_id": "DEV1", "reason": "closed"})
+        self.assertEqual(emitted, [])
+
+        # New active session forwards answer with matching offer_id
+        c2.handlers["webrtc:answer"]({"device_id": "DEV1", "sdp": "ans-2", "type": "answer"})
+        self.assertEqual(
+            emitted,
+            [("scrcpy:webrtc:answer", {"udid": self.udid, "sdp": "ans-2", "type": "answer", "offer_id": "o2"})],
+        )

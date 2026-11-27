@@ -461,6 +461,7 @@ onUnmounted(() => {
 .device-card.fill-pane :deep(.screen-wrap) {
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .device-card.is-fullscreen,

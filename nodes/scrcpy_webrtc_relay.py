@@ -38,6 +38,17 @@ class ScrcpyWebRTCRelay:
         self._lock = threading.RLock()
         self._sessions: Dict[Tuple[str, str], dict] = {}
 
+    def _is_active(self, key: Tuple[str, str], sio: Any) -> bool:
+        with self._lock:
+            entry = self._sessions.get(key)
+            return bool(entry and entry.get("sio") is sio)
+
+    def _drop_if_same(self, key: Tuple[str, str], sio: Any) -> None:
+        with self._lock:
+            entry = self._sessions.get(key)
+            if entry and entry.get("sio") is sio:
+                self._sessions.pop(key, None)
+
     def start_offer(
         self,
         sid: str,
@@ -45,6 +56,7 @@ class ScrcpyWebRTCRelay:
         sdp: str,
         emit_fn: EmitFn,
         *,
+        offer_id: Optional[str] = None,
         client_factory: Optional[ClientFactory] = None,
     ) -> None:
         if not sdp:
@@ -82,34 +94,49 @@ class ScrcpyWebRTCRelay:
         key = (sid, udid)
         retried_unavailable = False
 
+        def _with_offer_id(payload: dict) -> dict:
+            if offer_id is not None:
+                payload["offer_id"] = offer_id
+            return payload
+
         @sio.on("webrtc:answer")
         def _on_answer(data: Any) -> None:
+            if not self._is_active(key, sio):
+                return
             d = data or {}
             if d.get("device_id") and d.get("device_id") != remote_id:
                 return
             emit_fn(
                 "scrcpy:webrtc:answer",
-                {"udid": udid, "sdp": d.get("sdp", ""), "type": d.get("type", "answer")},
+                _with_offer_id(
+                    {"udid": udid, "sdp": d.get("sdp", ""), "type": d.get("type", "answer")}
+                ),
             )
 
         @sio.on("webrtc:ice")
         def _on_ice(data: Any) -> None:
+            if not self._is_active(key, sio):
+                return
             d = data or {}
             if d.get("device_id") and d.get("device_id") != remote_id:
                 return
             emit_fn(
                 "scrcpy:webrtc:ice",
-                {
-                    "udid": udid,
-                    "candidate": d.get("candidate"),
-                    "sdpMid": d.get("sdpMid"),
-                    "sdpMLineIndex": d.get("sdpMLineIndex"),
-                },
+                _with_offer_id(
+                    {
+                        "udid": udid,
+                        "candidate": d.get("candidate"),
+                        "sdpMid": d.get("sdpMid"),
+                        "sdpMLineIndex": d.get("sdpMLineIndex"),
+                    }
+                ),
             )
 
         @sio.on("webrtc:closed")
         def _on_closed(data: Any) -> None:
             nonlocal retried_unavailable
+            if not self._is_active(key, sio):
+                return
             d = data or {}
             if d.get("device_id") and d.get("device_id") != remote_id:
                 return
@@ -119,14 +146,12 @@ class ScrcpyWebRTCRelay:
                 with suppress(AppError):
                     adapter.client.request("POST", "/api/start", json={"device_id": remote_id})
                 time.sleep(0.6)
-                with self._lock:
-                    live = self._sessions.get(key)
-                if live and live.get("sio") is sio:
+                if self._is_active(key, sio):
                     with suppress(Exception):
                         sio.emit("webrtc:offer", {"device_id": remote_id, "sdp": sdp})
                         return
-            self._drop_entry(key)
-            emit_fn("scrcpy:webrtc:closed", {"udid": udid, "reason": reason})
+            self._drop_if_same(key, sio)
+            emit_fn("scrcpy:webrtc:closed", _with_offer_id({"udid": udid, "reason": reason}))
 
         try:
             sio.connect(adapter.node.url, transports=["polling"], headers=headers, wait_timeout=6)
@@ -146,6 +171,7 @@ class ScrcpyWebRTCRelay:
                 "http_session": sess,
                 "remote_id": remote_id,
                 "udid": udid,
+                "offer_id": offer_id,
             }
 
         sio.emit("webrtc:offer", {"device_id": remote_id, "sdp": sdp})

@@ -99,11 +99,13 @@ def register(socketio) -> None:
     def _scrcpy_offer(data):
         data = data or {}
         udid, sdp = data.get("udid"), data.get("sdp")
+        offer_id = data.get("offer_id")
         sid = _sid()
+        closed_base = {"udid": udid, **({"offer_id": offer_id} if offer_id is not None else {})}
         if not (udid and sdp):
             socketio.emit(
                 "scrcpy:webrtc:closed",
-                {"udid": udid, "reason": "udid and sdp required"},
+                {**closed_base, "reason": "udid and sdp required"},
                 room=sid,
             )
             return
@@ -111,7 +113,7 @@ def register(socketio) -> None:
 
         denied = reservation_gate(udid)
         if denied:
-            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": f"denied:{denied}"}, room=sid)
+            socketio.emit("scrcpy:webrtc:closed", {**closed_base, "reason": f"denied:{denied}"}, room=sid)
             return
         try:
             state.add_viewer(udid, sid)
@@ -121,14 +123,15 @@ def register(socketio) -> None:
                 udid,
                 sdp,
                 lambda event, payload: socketio.emit(event, payload, room=sid),
+                offer_id=offer_id,
             )
         except AppError as exc:
             state.remove_viewer(udid, sid)
-            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": exc.message}, room=sid)
+            socketio.emit("scrcpy:webrtc:closed", {**closed_base, "reason": exc.message}, room=sid)
         except Exception as exc:  # noqa: BLE001
             state.remove_viewer(udid, sid)
             _log.exception("scrcpy:webrtc:offer failed for %s", udid)
-            socketio.emit("scrcpy:webrtc:closed", {"udid": udid, "reason": str(exc)}, room=sid)
+            socketio.emit("scrcpy:webrtc:closed", {**closed_base, "reason": str(exc)}, room=sid)
 
     @socketio.on("scrcpy:webrtc:ice")
     def _scrcpy_ice(data):

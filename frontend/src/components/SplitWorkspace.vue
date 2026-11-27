@@ -4,152 +4,11 @@
       <div class="card sp-empty muted">{{ t("split.needDevices") }}</div>
     </template>
 
-    <!-- 2-pane horizontal split with draggable divider -->
-    <template v-else-if="mode === 'split-2'">
+    <template v-else v-for="(udid, idx) in panes" :key="udid">
       <div
-        class="sp-pane"
-        :class="{ focused: panes[0] === focusedUdid }"
-        :style="{ flex: `0 0 calc(${(ratio * 100).toFixed(2)}% - 3px)` }"
-        @pointerdown="$emit('focus', panes[0])"
-      >
-        <div class="sp-head">
-          <div class="sp-head-left">
-            <span class="sp-dot" :class="dotClass(panes[0])" />
-            <span class="sp-os mono" :class="isAndroid(panes[0]) ? 'and' : 'ios'">
-              {{ isAndroid(panes[0]) ? "AND" : "iOS" }}
-            </span>
-            <select
-              class="sp-select"
-              :value="panes[0]"
-              :aria-label="t('detail.switchDevice')"
-              @change="$emit('replace', 0, $event.target.value)"
-            >
-              <option v-for="d in devices" :key="d.udid" :value="d.udid">
-                {{ d.marketing || d.name || d.udid.slice(0, 12) }} ({{ d.platform === 'android' ? 'AND' : 'iOS' }})
-              </option>
-            </select>
-          </div>
-          <div class="sp-head-actions">
-            <button
-              type="button"
-              class="sp-sync-btn"
-              :class="{ active: isMaster(panes[0]) }"
-              :disabled="syncSaving"
-              :title="t('split.setMasterHint')"
-              @click.stop="toggleMaster(panes[0])"
-            >
-              {{ t("split.masterBtn") }}
-            </button>
-            <button
-              type="button"
-              class="sp-sync-btn slave"
-              :class="{ active: isSlave(panes[0]) }"
-              :disabled="syncSaving"
-              :title="t('split.toggleSlaveHint')"
-              @click.stop="onToggleSlave(panes[0])"
-            >
-              {{ t("split.slaveBtn") }}
-            </button>
-            <button type="button" class="sp-icon-btn" :title="t('viewMode.expand')" @click.stop="$emit('open-single', panes[0])">⤢</button>
-            <button type="button" class="sp-icon-btn" :title="t('split.closePane')" @click.stop="$emit('remove', panes[0])">✕</button>
-          </div>
-        </div>
-        <div class="sp-body">
-          <template v-if="canControl(panes[0])">
-            <DeviceStage v-if="devOf(panes[0])?.connected" :udid="panes[0]" :connected="true" :fill-pane="true" />
-            <div v-else class="sp-gate">
-              <button class="primary" :disabled="busy[panes[0]]" @click="connectOne(panes[0])">
-                {{ busy[panes[0]] ? t("detail.connecting") : t("detail.connect") }}
-              </button>
-            </div>
-          </template>
-          <div v-else class="sp-gate">
-            <p class="muted sp-gate-hint">{{ t("reservation.reserveToControl") }}</p>
-            <ReservationCard :udid="panes[0]" style="width: min(290px, 100%)" />
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="sp-divider"
-        :class="{ dragging }"
-        role="separator"
-        aria-orientation="vertical"
-        @pointerdown.prevent="startDrag"
-      />
-
-      <div
-        class="sp-pane"
-        :class="{ focused: panes[1] === focusedUdid }"
-        :style="{ flex: '1 1 0' }"
-        @pointerdown="$emit('focus', panes[1])"
-      >
-        <div class="sp-head">
-          <div class="sp-head-left">
-            <span class="sp-dot" :class="dotClass(panes[1])" />
-            <span class="sp-os mono" :class="isAndroid(panes[1]) ? 'and' : 'ios'">
-              {{ isAndroid(panes[1]) ? "AND" : "iOS" }}
-            </span>
-            <select
-              class="sp-select"
-              :value="panes[1]"
-              :aria-label="t('detail.switchDevice')"
-              @change="$emit('replace', 1, $event.target.value)"
-            >
-              <option v-for="d in devices" :key="d.udid" :value="d.udid">
-                {{ d.marketing || d.name || d.udid.slice(0, 12) }} ({{ d.platform === 'android' ? 'AND' : 'iOS' }})
-              </option>
-            </select>
-          </div>
-          <div class="sp-head-actions">
-            <button
-              type="button"
-              class="sp-sync-btn"
-              :class="{ active: isMaster(panes[1]) }"
-              :disabled="syncSaving"
-              :title="t('split.setMasterHint')"
-              @click.stop="toggleMaster(panes[1])"
-            >
-              {{ t("split.masterBtn") }}
-            </button>
-            <button
-              type="button"
-              class="sp-sync-btn slave"
-              :class="{ active: isSlave(panes[1]) }"
-              :disabled="syncSaving"
-              :title="t('split.toggleSlaveHint')"
-              @click.stop="onToggleSlave(panes[1])"
-            >
-              {{ t("split.slaveBtn") }}
-            </button>
-            <button type="button" class="sp-icon-btn" :title="t('viewMode.expand')" @click.stop="$emit('open-single', panes[1])">⤢</button>
-            <button type="button" class="sp-icon-btn" :title="t('split.closePane')" @click.stop="$emit('remove', panes[1])">✕</button>
-          </div>
-        </div>
-        <div class="sp-body">
-          <template v-if="canControl(panes[1])">
-            <DeviceStage v-if="devOf(panes[1])?.connected" :udid="panes[1]" :connected="true" :fill-pane="true" />
-            <div v-else class="sp-gate">
-              <button class="primary" :disabled="busy[panes[1]]" @click="connectOne(panes[1])">
-                {{ busy[panes[1]] ? t("detail.connecting") : t("detail.connect") }}
-              </button>
-            </div>
-          </template>
-          <div v-else class="sp-gate">
-            <p class="muted sp-gate-hint">{{ t("reservation.reserveToControl") }}</p>
-            <ReservationCard :udid="panes[1]" style="width: min(290px, 100%)" />
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- 3-4 pane adaptive multi-grid split -->
-    <template v-else>
-      <div
-        v-for="(udid, idx) in panes"
-        :key="udid + '-' + idx"
         class="sp-pane"
         :class="{ focused: udid === focusedUdid }"
+        :style="paneStyle(idx)"
         @pointerdown="$emit('focus', udid)"
       >
         <div class="sp-head">
@@ -196,7 +55,7 @@
         </div>
         <div class="sp-body">
           <template v-if="canControl(udid)">
-            <DeviceStage v-if="devOf(udid)?.connected" :udid="udid" :connected="true" :fill-pane="true" />
+            <DeviceStage v-if="devOf(udid)?.connected" :key="udid" :udid="udid" :connected="true" :fill-pane="true" />
             <div v-else class="sp-gate">
               <button class="primary" :disabled="busy[udid]" @click="connectOne(udid)">
                 {{ busy[udid] ? t("detail.connecting") : t("detail.connect") }}
@@ -209,6 +68,15 @@
           </div>
         </div>
       </div>
+
+      <div
+        v-if="mode === 'split-2' && idx === 0"
+        class="sp-divider"
+        :class="{ dragging }"
+        role="separator"
+        aria-orientation="vertical"
+        @pointerdown.prevent="startDrag"
+      />
     </template>
   </div>
 </template>
@@ -246,6 +114,13 @@ const layoutClass = computed(() => {
   if (props.mode === "split-2" && props.panes.length >= 2) return "sp-row";
   return props.panes.length <= 2 ? "sp-grid-2" : "sp-grid-4";
 });
+
+function paneStyle(idx) {
+  if (props.mode !== "split-2" || props.panes.length < 2) return {};
+  return idx === 0
+    ? { flex: `0 0 calc(${(props.ratio * 100).toFixed(2)}% - 3px)` }
+    : { flex: "1 1 0" };
+}
 
 const devOf = (udid) => props.devices.find((d) => d.udid === udid);
 const isAndroid = (udid) => devOf(udid)?.platform === "android";

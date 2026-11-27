@@ -17,6 +17,8 @@ export function useScrcpyStream(udid) {
   let inputChannel = null;
   let devSize = { w: 1080, h: 2400 };
   let negId = 0;
+  let activeOfferId = "";
+  let offerEmitted = false;
   let timeoutHandle = null;
   let fallbackCb = null;
   const disposers = [];
@@ -30,6 +32,8 @@ export function useScrcpyStream(udid) {
 
   function _cleanup() {
     negId += 1;
+    activeOfferId = "";
+    offerEmitted = false;
     _clearTimeout();
     if (pc) {
       try { pc.close(); } catch { /* ignore */ }
@@ -122,6 +126,9 @@ export function useScrcpyStream(udid) {
     fallbackCb = onFallback || null;
 
     const myId = negId;
+    const offerId = `${udid}-${Date.now()}-${myId}`;
+    activeOfferId = offerId;
+    offerEmitted = false;
     let rtcOpts = { iceServers: [] };
     try {
       const cfg = await devicesApi.rtcConfig(udid);
@@ -178,7 +185,8 @@ export function useScrcpyStream(udid) {
       const offer = await myPc.createOffer();
       await myPc.setLocalDescription(offer);
       if (myId !== negId || pc !== myPc) return;
-      emit("scrcpy:webrtc:offer", { udid, sdp: myPc.localDescription.sdp });
+      offerEmitted = true;
+      emit("scrcpy:webrtc:offer", { udid, sdp: myPc.localDescription.sdp, offer_id: offerId });
     } catch (e) {
       _triggerFallback(e?.message || "createOffer failed", myId);
     }
@@ -188,6 +196,7 @@ export function useScrcpyStream(udid) {
     disposers.push(
       on("scrcpy:webrtc:answer", async (d) => {
         if (!pc || d?.udid !== udid) return;
+        if (d?.offer_id && d.offer_id !== activeOfferId) return;
         if (pc.signalingState !== "have-local-offer") return;
         const myId = negId;
         try {
@@ -198,6 +207,7 @@ export function useScrcpyStream(udid) {
       }),
       on("scrcpy:webrtc:ice", async (d) => {
         if (!pc || !d?.candidate || d?.udid !== udid) return;
+        if (d?.offer_id && d.offer_id !== activeOfferId) return;
         try {
           await pc.addIceCandidate({
             candidate: d.candidate,
@@ -208,13 +218,18 @@ export function useScrcpyStream(udid) {
       }),
       on("scrcpy:webrtc:closed", (d) => {
         if (d?.udid && d.udid !== udid) return;
+        // Ignore stale teardown events from an earlier peer while awaiting rtcConfig/createOffer.
+        if (!offerEmitted || !pc) return;
+        if (d?.offer_id && d.offer_id !== activeOfferId) return;
         _triggerFallback(d?.reason || "closed", negId);
       }),
     );
   }
 
   function stop() {
-    emit("scrcpy:webrtc:close", { udid });
+    if (offerEmitted || pc) {
+      emit("scrcpy:webrtc:close", { udid });
+    }
     _cleanup();
   }
 
