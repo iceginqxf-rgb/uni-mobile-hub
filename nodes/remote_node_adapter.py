@@ -260,6 +260,10 @@ class RemoteNodeController:
             return
         if key == "rotate":
             self._scrcpy("POST", "/rotate", json={"target": 1})
+            dev = state.get_device(self.udid)
+            if dev and dev.screen_width and dev.screen_height:
+                dev.screen_width, dev.screen_height = int(dev.screen_height), int(dev.screen_width)
+                dev.orientation = "LANDSCAPE" if dev.orientation != "LANDSCAPE" else "PORTRAIT"
             return
         code = _ANDROID_BUTTON_KEYCODES.get(key)
         if code is None:

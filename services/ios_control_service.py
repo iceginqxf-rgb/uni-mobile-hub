@@ -192,9 +192,32 @@ class IOSControlService:
                 ErrorCode.BAD_REQUEST,
                 f"unknown button '{name}' (home/back/recent/lock/unlock/power/wake/rotate/volumeup/volumedown)",
             )
+        if name == "rotate":
+            cls._refresh_geometry(udid, controller)
         if sync_service.get_slaves(udid):
             sync_service.fanout(udid, "button", {"name": name})
         return {"button": name}
+
+    @staticmethod
+    def _refresh_geometry(udid: str, controller) -> None:
+        dev = state.get_device(udid)
+        if not dev:
+            return
+        try:
+            w, h = controller.get_window_size()
+            orient = controller.get_orientation()
+            if (w and h and (dev.screen_width != w or dev.screen_height != h)) or (
+                orient and dev.orientation != orient
+            ):
+                if w and h:
+                    dev.screen_width, dev.screen_height = int(w), int(h)
+                if orient:
+                    dev.orientation = orient
+                from services.event_bus import emit
+
+                emit("devices:changed", {"reason": "rotated", "udid": udid})
+        except Exception:
+            pass
 
     @staticmethod
     def accessibility(udid: str, feature: str, action: str = "toggle") -> dict:

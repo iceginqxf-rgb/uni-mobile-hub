@@ -202,22 +202,38 @@ class AdbClient:
 
     def get_screen_size(self, serial: str) -> Tuple[int, int]:
         meta = self._read_meta(serial)
-        if meta.get("width") and meta.get("height"):
-            return int(meta["width"]), int(meta["height"])
-        out = self.shell(serial, "wm size", timeout=5)
-        w, h = self._parse_wm_size(out)
-        if not w or not h:
-            raise AppError(ErrorCode.COORDINATE_MAPPING_FAILED, f"Cannot resolve wm size for {serial}")
-        with self._lock:
-            self._meta_cache.setdefault(serial, {})["width"] = w
-            self._meta_cache[serial]["height"] = h
+        w, h = meta.get("width"), meta.get("height")
+        if not (w and h):
+            out = self.shell(serial, "wm size", timeout=5)
+            w, h = self._parse_wm_size(out)
+            if not w or not h:
+                raise AppError(ErrorCode.COORDINATE_MAPPING_FAILED, f"Cannot resolve wm size for {serial}")
+            with self._lock:
+                self._meta_cache.setdefault(serial, {})["width"] = w
+                self._meta_cache[serial]["height"] = h
+        w, h = int(w), int(h)
+        orient = self.get_orientation(serial)
+        if orient == "LANDSCAPE" and w < h:
+            return h, w
+        if orient == "PORTRAIT" and w > h:
+            return h, w
         return w, h
 
     def get_orientation(self, serial: str) -> str:
         try:
-            out = self.shell(serial, "dumpsys input | grep SurfaceOrientation", timeout=4)
+            out = self.shell(
+                serial,
+                "dumpsys input 2>/dev/null | grep -E 'SurfaceOrientation|mCurrentOrientation' || "
+                "dumpsys window displays 2>/dev/null | grep -E 'mCurrentRotation|SurfaceOrientation'",
+                timeout=4,
+            )
             m = re.search(r"SurfaceOrientation:\s*(\d+)", out)
             if m and int(m.group(1)) in (1, 3):
+                return "LANDSCAPE"
+            if re.search(r"ROTATION_(90|270)\b", out):
+                return "LANDSCAPE"
+            m2 = re.search(r"mCurrentOrientation=(\d+)", out)
+            if m2 and int(m2.group(1)) == 2:
                 return "LANDSCAPE"
         except AppError:
             pass
@@ -285,7 +301,14 @@ class AdbClient:
         self.keyevent(serial, 279)
 
     def set_clipboard(self, serial: str, text: str) -> None:
-        self.shell(serial, f"cmd clipboard set-text {_quote_arg(text)}")
+        text = str(text or "")
+        if all(32 <= ord(ch) < 127 for ch in text) and "\n" not in text:
+            self.shell(serial, f"cmd clipboard set-text {_quote_arg(text)}")
+            return
+        # Encode non-ASCII / multiline text as pure ASCII base64 so Windows SSH
+        # codepages never corrupt UTF-8 characters.
+        b64 = base64.b64encode(text.encode("utf-8")).decode("ascii")
+        self.shell(serial, f"cmd clipboard set-text \"$(printf '%s' '{b64}' | base64 -d)\"")
 
     def get_clipboard(self, serial: str) -> str:
         try:
