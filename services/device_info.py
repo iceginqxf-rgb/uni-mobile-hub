@@ -162,4 +162,13 @@ def collect(udid: str) -> dict:
     if total and avail is not None:
         info["storage"] = {"used": total - avail, "total": total}
 
+    try:
+        from ios.dvt_metrics import collect_memory_info
+
+        mem = collect_memory_info(udid)
+        if mem and mem.get("total"):
+            info["memory"] = mem
+    except Exception as exc:
+        _log.debug("memory info skipped for %s: %s", udid[:12], exc)
+
     return info

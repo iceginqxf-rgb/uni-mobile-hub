@@ -1,4 +1,4 @@
-"""App management HTTP API: list / uninstall / install installed apps."""
+"""App management HTTP API: list / running / uninstall / install apps."""
 
 from __future__ import annotations
 
@@ -22,6 +22,13 @@ _svc = IOSAppService()
 def list_apps(udid: str):
     system = request.args.get("system", "0") in ("1", "true", "yes")
     return _svc.list_apps(udid, system=system)
+
+
+@bp.get("/<udid>/running-apps")
+@api
+def running_apps(udid: str):
+    system = request.args.get("system", "0") in ("1", "true", "yes")
+    return _svc.running_apps(udid, include_system=system)
 
 
 @bp.post("/<udid>/apps/uninstall")

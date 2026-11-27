@@ -24,7 +24,7 @@
       <button class="card-action" :title="t('control.home')" @click="ctrl.pressButton('home')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" /></svg>
       </button>
-      <button class="card-action" :title="t('control.recent')" @click="ctrl.pressButton('recent')">
+      <button class="card-action" :title="t('control.recent')" @click="onRecent">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
       </button>
       <button v-if="!isAndroid" class="card-action" :title="t('control.lock')" @click="ctrl.pressButton('lock')">
@@ -118,6 +118,7 @@ import { useScrcpyStream } from "../composables/useScrcpyStream";
 import { useHevcStream, browserSupportsHevc, iosSupportsHevc } from "../composables/useHevcStream";
 import { useDevices } from "../composables/useDevices";
 import { useControl } from "../composables/useControl";
+import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
 const { t } = useUiI18n();
@@ -184,6 +185,10 @@ hevc.setFallback(leaveHevc);
 
 const device = computed(() => devices.value.find((d) => d.udid === props.udid));
 const isAndroid = computed(() => device.value?.platform === "android");
+function onRecent() {
+  if (isAndroid.value) ctrl.pressButton("recent");
+  else openTaskSwitcher(props.udid);
+}
 const streamEndpoint = computed(() => device.value?.stream_endpoint || null);
 // Prefer the marketing name ("iPhone 15 Pro Max") over the lockdown DeviceName
 // (typically just "iPhone" if the user never renamed the device). Backend stamps

@@ -48,6 +48,7 @@
 <script setup>
 import { ref, watch, nextTick } from "vue";
 import { useControl } from "../composables/useControl";
+import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
 const { t } = useUiI18n();
@@ -201,7 +202,7 @@ function onUp(ev) {
       if (dt < 450) {
         pressButton("home");
       } else {
-        pressButton("recent");
+        openTaskSwitcher(props.udid);
       }
       start = null;
       return;

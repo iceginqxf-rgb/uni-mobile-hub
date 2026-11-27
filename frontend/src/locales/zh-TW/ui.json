@@ -355,6 +355,21 @@
     "saved": "群控組已儲存",
     "cleared": "群控組已清除"
   },
+  "taskSwitcher": {
+    "title": "iOS 多工切換器",
+    "hint": "由於 iOS 27 系統限制外部模擬手勢喚出背景介面，這裡直接列出執行中的應用供一鍵切換或關閉。",
+    "running": "執行中",
+    "allApps": "全部應用",
+    "search": "搜尋應用名稱或 Bundle ID…",
+    "showSystem": "顯示系統程序",
+    "foreground": "目前前景",
+    "switch": "切換",
+    "closeApp": "結束",
+    "empty": "未偵測到符合應用",
+    "loading": "讀取執行中應用…",
+    "assistiveTouch": "輔助觸控 (小白點)",
+    "refresh": "重新整理"
+  },
   "errors": {
     "network": "網路請求失敗，請檢查連線後重試。",
     "generic": "發生錯誤，請重試。",

@@ -355,6 +355,21 @@
     "saved": "Sync group saved",
     "cleared": "Sync group cleared"
   },
+  "taskSwitcher": {
+    "title": "iOS Task Switcher",
+    "hint": "iOS 27 blocks synthetic App Switcher gestures; view, switch, or terminate running apps directly here.",
+    "running": "Running",
+    "allApps": "All Apps",
+    "search": "Filter by app name or bundle ID…",
+    "showSystem": "Show system processes",
+    "foreground": "Foreground",
+    "switch": "Switch",
+    "closeApp": "Close",
+    "empty": "No matching apps found",
+    "loading": "Loading running apps…",
+    "assistiveTouch": "AssistiveTouch",
+    "refresh": "Refresh"
+  },
   "errors": {
     "network": "Network request failed. Please check the connection and try again.",
     "generic": "Something went wrong. Please try again.",

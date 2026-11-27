@@ -18,7 +18,7 @@
     <template v-else>
       <div class="row" style="flex-wrap: wrap; gap: 6px; margin-top: 8px">
         <button @click="ctrl.pressButton('home')">{{ t("control.home") }}</button>
-        <button @click="ctrl.pressButton('recent')">{{ t("control.recent") }}</button>
+        <button @click="openTaskSwitcher(props.udid)">{{ t("control.recent") }}</button>
         <button @click="ctrl.pressButton('lock')">{{ t("control.lock") }}</button>
       </div>
       <label class="muted" style="font-size: 0.72rem; display: block; margin-top: 10px">{{ t("quick.accessibility") }}</label>
@@ -35,6 +35,7 @@
 import { computed } from "vue";
 import { useControl } from "../composables/useControl";
 import { useDevices } from "../composables/useDevices";
+import { openTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
 import { useToast } from "../composables/useToast";

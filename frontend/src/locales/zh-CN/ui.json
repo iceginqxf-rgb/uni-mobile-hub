@@ -355,6 +355,21 @@
     "saved": "群控组已保存",
     "cleared": "群控组已清除"
   },
+  "taskSwitcher": {
+    "title": "iOS 多任务切换器",
+    "hint": "由于 iOS 27 系统限制外部模拟手势呼出后台界面，这里直接列出运行中的应用供一键切换或关闭。",
+    "running": "运行中",
+    "allApps": "全部应用",
+    "search": "搜索应用名称或 Bundle ID…",
+    "showSystem": "显示系统进程",
+    "foreground": "当前前台",
+    "switch": "切换",
+    "closeApp": "结束",
+    "empty": "未检测到匹配应用",
+    "loading": "读取运行中应用…",
+    "assistiveTouch": "辅助触控 (小白点)",
+    "refresh": "刷新"
+  },
   "errors": {
     "network": "网络请求失败，请检查连接后重试。",
     "generic": "出错了，请重试。",

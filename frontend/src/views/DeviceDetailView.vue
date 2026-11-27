@@ -92,11 +92,17 @@
       </div>
       </aside>
     </div>
+
+    <IosTaskSwitcherModal
+      v-if="!isAndroid && taskSwitcherUdid === udid"
+      :udid="udid"
+      @close="closeTaskSwitcher()"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import DeviceStage from "../components/DeviceStage.vue";
 import DeviceInfoCard from "../components/DeviceInfoCard.vue";
 import ReservationCard from "../components/ReservationCard.vue";
@@ -107,8 +113,10 @@ import AppsPanel from "../components/AppsPanel.vue";
 import FilesPanel from "../components/FilesPanel.vue";
 import LogPanel from "../components/LogPanel.vue";
 import DeviceStrip from "../components/DeviceStrip.vue";
+import IosTaskSwitcherModal from "../components/IosTaskSwitcherModal.vue";
 import { useDevices } from "../composables/useDevices";
 import { useReservations } from "../composables/useReservations";
+import { useTaskSwitcher } from "../composables/useTaskSwitcher";
 import { useUiI18n } from "../composables/useUiI18n";
 
 const props = defineProps({
@@ -123,6 +131,7 @@ const emit = defineEmits(["back", "select"]);
 const { t } = useUiI18n();
 const { devices, connect, disconnect } = useDevices();
 const { canControl } = useReservations();
+const { taskSwitcherUdid, closeTaskSwitcher } = useTaskSwitcher();
 // May the current user operate this device? Admins bypass; a normal user must
 // hold its reservation. Gates auto-connect + the 连接 button so a normal user
 // is steered to 占用 first (the ReservationCard) rather than hitting a 403.
@@ -193,6 +202,14 @@ onMounted(() => {
 // Claiming 占用 immediately unlocks & auto-connects the device in one click.
 watch(canCtl, (ok, prev) => {
   if (ok && !prev && !device.value?.connected) connectDevice();
+});
+
+watch(() => props.udid, () => {
+  closeTaskSwitcher();
+});
+
+onUnmounted(() => {
+  closeTaskSwitcher();
 });
 </script>
 
